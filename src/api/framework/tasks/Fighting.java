@@ -27,7 +27,7 @@ public class Fighting extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         NPC target = NPCs.getNearest((NPC npc) -> npc != null && Configuration.NPC_IDS.contains(npc.getId()) && npc.isReachable() && !npc.isInCombat() && !npc.isDead());
         if (target != null)
@@ -35,6 +35,7 @@ public class Fighting extends ScriptTask
             target.interact("Attack");
             Timing.sleep(() -> Players.getMyPlayer().getInteractingIndex() != -1 || target.isInCombat(), 5000);
         }
+        return 200;
     }
 
     @Override

@@ -16,7 +16,8 @@ public class Idling extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
+        return 200;
     }
 }

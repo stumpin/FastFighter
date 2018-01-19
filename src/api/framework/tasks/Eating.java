@@ -22,7 +22,7 @@ public class Eating extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         Item item = Inventory.getItem(Configuration.FOOD_ID);
         if (item != null)
@@ -37,7 +37,9 @@ public class Eating extends ScriptTask
         else
         {
             Packets.sendAction(315, 0, 0, 12856);
+            return -1;
         }
+        return 200;
     }
 
     @Override

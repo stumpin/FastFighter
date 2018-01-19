@@ -7,6 +7,7 @@ import xobot.script.Manifest;
 import xobot.script.util.Time;
 
 import api.framework.tasks.*;
+import xobot.script.util.Timer;
 
 import java.awt.*;
 
@@ -22,7 +23,7 @@ public class FastFighter extends ActiveScript implements PaintListener
     private GUI menu;
     private TaskManager manager;
     private ScriptTask currentTask;
-    private long startTime;
+    private Timer startTime;
 
     @Override
     public boolean onStart()
@@ -35,7 +36,7 @@ public class FastFighter extends ActiveScript implements PaintListener
             Time.sleep(100);
         }
 
-        startTime = System.currentTimeMillis();
+        startTime = new Timer();
 
         for (int i = 0; i < menu.getMyNPCsList().getModel().getSize(); i++)
         {
@@ -64,9 +65,7 @@ public class FastFighter extends ActiveScript implements PaintListener
     public int loop()
     {
         currentTask = manager.getCurrentTask();
-        currentTask.perform();
-
-        return 200;
+        return currentTask.perform();
     }
 
     @Override
@@ -75,20 +74,8 @@ public class FastFighter extends ActiveScript implements PaintListener
         g.setColor(new Color(0, 0, 0, 127));
         g.fillRect(0, 305, 516, 33);
         g.setColor(Color.WHITE);
-        long runtime = getRuntime();
-        long second = (runtime / 1000) % 60;
-        long minute = (runtime / (1000 * 60)) % 60;
-        long hour = (runtime / (1000 * 60 * 60)) % 24;
-        g.drawString("Run time: " + hour + ":" + minute + ":" + second, 20, 325);
+        g.drawString("Run time: " + startTime.toElapsedString(), 20, 325);
         g.drawString("Fast Fighter V" + Configuration.VERSION, 200, 325);
         g.drawString("Task: " + currentTask.getName(), 400, 325);
-    }
-
-    /**
-     * @return script runtime
-     */
-    public long getRuntime()
-    {
-        return System.currentTimeMillis() - startTime;
     }
 }

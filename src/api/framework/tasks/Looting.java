@@ -39,7 +39,7 @@ public class Looting extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         /**
          * if inventory is full, attempt to make room...
@@ -62,6 +62,7 @@ public class Looting extends ScriptTask
             Packets.sendAction(234, groundItems.get(0).getItem().getID(), groundItems.get(0).getX(), groundItems.get(0).getY());
             Timing.sleep(() -> getRealInvCount() > oldCount, 7500);
         }
+        return 200;
     }
 
     @Override

@@ -24,7 +24,7 @@ public abstract class ScriptTask
     /**
      * Performs the ScriptTask
      */
-    public abstract void perform();
+    public abstract int perform();
 
     /**
      * @return priority of the task

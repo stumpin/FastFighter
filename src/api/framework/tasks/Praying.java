@@ -36,7 +36,7 @@ public class Praying extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         if (disabled != null)
         {
@@ -44,6 +44,7 @@ public class Praying extends ScriptTask
             disabled.Activate();
             Timing.sleep(() -> disabled.isActivated(), 2500);
         }
+        return 200;
     }
 
     @Override

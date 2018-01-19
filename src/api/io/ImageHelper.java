@@ -1,8 +1,8 @@
 package api.io;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.net.URL;
 
 /**
@@ -14,7 +14,7 @@ public class ImageHelper
 {
     public Image scaleImage(Image img, int w, int h)
     {
-        return img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return (img != null) ? img.getScaledInstance(w, h, Image.SCALE_SMOOTH) : null;
     }
 
     public Image loadResourceImage(String path)
@@ -25,7 +25,7 @@ public class ImageHelper
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Source: " + path + "\nCaused by: " + e.getCause().toString(), "Error loading image", JOptionPane.ERROR_MESSAGE);
         }
         return null;
     }

@@ -104,27 +104,23 @@ public class GUI extends JFrame
         });
 
         ImageHelper helper = new ImageHelper();
-        JButton shifter = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("http://downloadicons.net/sites/default/files/left-right-double-arrow-icon-68673.png"), 20, 20)));
+        JButton shifter = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Resize_horizontal_font_awesome.svg/1000px-Resize_horizontal_font_awesome.svg.png"), 20, 20)));
         shifter.setBounds(247, 120, 40, 20);
         shifter.setOpaque(false);
         shifter.setFocusable(false);
         shifter.setToolTipText("Shift over an npc to your list, or delete it from you list");
-        shifter.addActionListener(new ActionListener()
+        shifter.addActionListener((ActionEvent e) ->
         {
-            @Override
-            public void actionPerformed(ActionEvent e)
+            if (!allNPCsList.isSelectionEmpty())
             {
-                if (!allNPCsList.isSelectionEmpty())
+                if (!myNPCsModel.contains(allNPCsList.getSelectedValue()))
                 {
-                    if (!myNPCsModel.contains(allNPCsList.getSelectedValue()))
-                    {
-                        myNPCsModel.addElement(allNPCsList.getSelectedValue());
-                    }
+                    myNPCsModel.addElement(allNPCsList.getSelectedValue());
                 }
-                else if (!myNPCsList.isSelectionEmpty())
-                {
-                    myNPCsModel.removeElement(myNPCsList.getSelectedValue());
-                }
+            }
+            else if (!myNPCsList.isSelectionEmpty())
+            {
+                myNPCsModel.removeElement(myNPCsList.getSelectedValue());
             }
         });
 
@@ -185,7 +181,7 @@ public class GUI extends JFrame
 
         JScrollPane lootPane = new JScrollPane(lootTable);
 
-        JButton adder = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("http://iconbug.com/data/cf/256/a9460e64671e681d61a357a66991c0d1.png"), 20, 20)));
+        JButton adder = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("https://cdn1.iconfinder.com/data/icons/toolbar-signs/512/add-512.png"), 20, 20)));
         adder.setOpaque(false);
         adder.setFocusable(false);
         adder.setToolTipText("Add a row");
@@ -264,6 +260,11 @@ public class GUI extends JFrame
 
         this.add(tabbedPane, BorderLayout.CENTER);
         this.add(start, BorderLayout.SOUTH);
+    }
+
+    public static void main(String... args)
+    {
+        new GUI().setVisible(true);
     }
 
     public boolean isCompleted()
