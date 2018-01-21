@@ -3,6 +3,7 @@ package api.io;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import java.net.URL;
 
 /**
@@ -21,7 +22,7 @@ public class ImageHelper
     {
         try
         {
-            return ImageIO.read(new URL(path));
+            return ImageIO.read(Thread.currentThread().getContextClassLoader().getResource(path));
         }
         catch (Exception e)
         {

@@ -104,7 +104,7 @@ public class GUI extends JFrame
         });
 
         ImageHelper helper = new ImageHelper();
-        JButton shifter = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Resize_horizontal_font_awesome.svg/1000px-Resize_horizontal_font_awesome.svg.png"), 20, 20)));
+        JButton shifter = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("arrow.png"), 20, 20)));
         shifter.setBounds(247, 120, 40, 20);
         shifter.setOpaque(false);
         shifter.setFocusable(false);
@@ -181,7 +181,7 @@ public class GUI extends JFrame
 
         JScrollPane lootPane = new JScrollPane(lootTable);
 
-        JButton adder = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("https://cdn1.iconfinder.com/data/icons/toolbar-signs/512/add-512.png"), 20, 20)));
+        JButton adder = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("plus.png"), 20, 20)));
         adder.setOpaque(false);
         adder.setFocusable(false);
         adder.setToolTipText("Add a row");
@@ -261,6 +261,7 @@ public class GUI extends JFrame
         this.add(tabbedPane, BorderLayout.CENTER);
         this.add(start, BorderLayout.SOUTH);
     }
+
 
     public boolean isCompleted()
     {
