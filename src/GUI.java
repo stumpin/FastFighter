@@ -1,21 +1,16 @@
 import api.Configuration;
 import api.io.ImageHelper;
 import xobot.script.methods.NPCs;
-import xobot.script.methods.Projectiles;
 import xobot.script.methods.tabs.Prayer;
 import xobot.script.wrappers.interactive.NPC;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -104,7 +99,7 @@ public class GUI extends JFrame
         });
 
         ImageHelper helper = new ImageHelper();
-        JButton shifter = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("arrow.png"), 20, 20)));
+        JButton shifter = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("\\resources\\arrow.png"), 20, 20)));
         shifter.setBounds(247, 120, 40, 20);
         shifter.setOpaque(false);
         shifter.setFocusable(false);
@@ -181,7 +176,7 @@ public class GUI extends JFrame
 
         JScrollPane lootPane = new JScrollPane(lootTable);
 
-        JButton adder = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("plus.png"), 20, 20)));
+        JButton adder = new JButton(new ImageIcon(helper.scaleImage(helper.loadResourceImage("\\resources\\plus.png"), 20, 20)));
         adder.setOpaque(false);
         adder.setFocusable(false);
         adder.setToolTipText("Add a row");
@@ -261,7 +256,6 @@ public class GUI extends JFrame
         this.add(tabbedPane, BorderLayout.CENTER);
         this.add(start, BorderLayout.SOUTH);
     }
-
 
     public boolean isCompleted()
     {

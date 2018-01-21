@@ -22,10 +22,15 @@ public class ImageHelper
     {
         try
         {
-            return ImageIO.read(Thread.currentThread().getContextClassLoader().getResource(path));
+            StringBuilder builder = new StringBuilder();
+            builder.append(System.getProperty("user.home"));
+            builder.append("\\Documents\\XoBot\\Scripts");
+            builder.append(path);
+            return ImageIO.read(new File(builder.toString()));
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Source: " + path + "\nCaused by: " + e.getCause().toString(), "Error loading image", JOptionPane.ERROR_MESSAGE);
         }
         return null;
