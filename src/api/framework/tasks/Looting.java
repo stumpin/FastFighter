@@ -4,7 +4,6 @@ import api.Configuration;
 import api.framework.ScriptTask;
 import api.general.Timing;
 import xobot.script.methods.GroundItems;
-import xobot.script.methods.Packets;
 import xobot.script.methods.tabs.Inventory;
 import xobot.script.wrappers.interactive.GroundItem;
 import xobot.script.wrappers.interactive.Item;
@@ -29,7 +28,7 @@ public class Looting extends ScriptTask
         GroundItem[] items = GroundItems.getAll();
         for (GroundItem item : items)
         {
-            if (item != null && Configuration.LOOT_IDS.contains(item.getItem().getID()))
+            if (item != null && Configuration.LOOT_IDS.contains(item.getItem().getID()) && item.getLocation().isReachable())
             {
                 groundItems.add(item);
             }
@@ -41,7 +40,7 @@ public class Looting extends ScriptTask
     @Override
     public int perform()
     {
-        /**
+        /*
          * if inventory is full, attempt to make room...
          */
         if (Inventory.isFull())
@@ -58,9 +57,9 @@ public class Looting extends ScriptTask
         }
         if (Timing.sleep(() -> !Inventory.isFull(), 2500))
         {
-            int oldCount = getRealInvCount();
-            Packets.sendAction(234, groundItems.get(0).getItem().getID(), groundItems.get(0).getX(), groundItems.get(0).getY());
-            Timing.sleep(() -> getRealInvCount() > oldCount, 7500);
+            int oldCount = Inventory.getRealCount();
+            groundItems.get(0).getItem().interact("Take");
+            Timing.sleep(() -> Inventory.getRealCount() > oldCount, 7500);
         }
         return 200;
     }
@@ -69,21 +68,5 @@ public class Looting extends ScriptTask
     public int getPriority()
     {
         return 2;
-    }
-
-    public int getRealInvCount()
-    {
-        int count = 0;
-        Item[] items = Inventory.getItems();
-
-        for (Item item : items)
-        {
-            if (item != null)
-            {
-                count += item.getStack();
-            }
-        }
-
-        return count;
     }
 }

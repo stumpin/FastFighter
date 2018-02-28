@@ -29,7 +29,7 @@ public class Eating extends ScriptTask
         {
             int hp = Skills.getCurrentLevel(Skills.CONSTITUTION);
             Packets.sendAction(74, item.getID(), item.getSlot(), 3214);
-            /**
+            /*
              * to prevent spam eating
              */
             Timing.sleep(() -> Skills.getCurrentLevel(Skills.CONSTITUTION) != hp, 3000);
