@@ -1,92 +1,101 @@
-import api.Configuration;
-import api.framework.ScriptTask;
-import api.framework.TaskManager;
-import api.framework.tasks.*;
-
+import api.ScriptContext;
+import api.task.TaskManager;
+import api.task.impl.Consumer;
+import api.task.impl.Fighter;
+import api.task.impl.Looter;
+import api.task.impl.Prayer;
 import xobot.client.callback.listeners.PaintListener;
 import xobot.script.ActiveScript;
 import xobot.script.Manifest;
+import xobot.script.methods.Game;
+import xobot.script.methods.tabs.Inventory;
+import xobot.script.util.Time;
 import xobot.script.util.Timer;
+import xobot.script.wrappers.interactive.Item;
+import xobot.script.wrappers.interactive.NPC;
 
 import java.awt.*;
-import java.awt.Font;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
+import java.io.File;
+import java.util.Arrays;
 
 /**
  * Created by HP xw8400
  * Author: Jacob
- * Date: 1/2/2018.
+ * Date: 3/16/2018.
  */
-@Manifest(authors = { "Kumalo" }, name = "Fast Fighter", description = "Fights anything, loots anything")
+
+@Manifest(authors = { "Jake" }, name = "Alora Fast Fighter", description = "Fights anything, loots anything")
 
 public class FastFighter extends ActiveScript implements PaintListener
 {
-    private GUI menu;
+    private Timer scriptTimer;
+    private GUI scriptGUI;
+    private ScriptContext scriptContext;
     private TaskManager manager;
-    private ScriptTask currentTask = new Idling();
-    private Timer startTime;
-    private Font font;
-    private final Color transBlack = new Color(0, 0, 0, 127);
-    private final Color transBlue = new Color(25, 156, 255, 127);
+    private final double VERSION = 1.1;
+    private final Color TRANS_BLACK = new Color(0, 0, 0, 127);
 
     @Override
     public boolean onStart()
     {
-        menu = new GUI();
-        menu.setVisible(true);
+        final File profiles = new File(ScriptContext.getXobotPath() + "FastFighterProfiles");
 
-        startTime = new Timer();
-        manager = new TaskManager(new Eating(), new Restoring(), new Praying(), new Fighting(), new Looting());
-
-        try
+        if (!profiles.exists())
         {
-            StringBuilder builder = new StringBuilder();
-            builder.append(System.getProperty("user.home"));
-            builder.append("\\Documents\\XoBot\\Scripts\\resources\\fonts\\Capture_it.ttf");
-
-            BufferedInputStream stream = new BufferedInputStream(new FileInputStream(builder.toString()));
-            font = Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(Font.PLAIN, 18);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
+            profiles.mkdir();
         }
 
-        return true;
+        scriptContext = new ScriptContext();
+
+        scriptGUI = new GUI(scriptContext);
+        scriptGUI.setVisible(true);
+
+        while (scriptGUI.isVisible())
+        {
+            Time.sleep(250);
+        }
+
+        manager = new TaskManager(scriptContext, new Consumer(), new Prayer(), new Fighter(), new Looter());
+        scriptTimer = new Timer();
+
+        return scriptGUI.isCompleted();
     }
 
     @Override
     public int loop()
     {
-        if (menu.isCompleted())
+        if (Game.isLoggedIn())
         {
-            currentTask = manager.getCurrentTask();
-            return currentTask.perform();
+            manager.getIdealTask().perform();
+            //Arrays.stream(Inventory.getAll(577, 1011)).filter(Item -> (Item != null)).forEach(Item -> Item.interact("open"));
+            Item casket = Inventory.getItem(2717, 2720, 2726);
+            if (casket != null)
+            {
+                casket.interact("open");
+                Time.sleep(1200);
+            }
         }
-        return 250;
+
+        return 50;
     }
+
 
     @Override
     public void repaint(Graphics g)
     {
         Graphics2D g2 = (Graphics2D) g;
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        if (menu.isVisible())
-        {
-            menu.drawGrid(g2);
-        }
-        g2.setColor(transBlack);
+
+        g2.setColor(TRANS_BLACK);
         g2.fillRect(0, 305, 516, 33);
+
         g2.setColor(Color.WHITE);
-        g2.drawString("Run time: " + startTime.toElapsedString(), 20, 325);
-        g2.drawString("Version: " + Configuration.VERSION, 220, 325);
-        g2.drawString("Task: " + currentTask.getName(), 420, 325);
-        g2.setFont(font);
-        g2.setColor(transBlue);
-        g2.fillRect(0, 272, 140, 33);
-        g2.fillArc(105, 272, 70, 66, 0, 90);
-        g2.setColor(Color.WHITE);
-        g2.drawString("Fast Fighter", 20, 295);
+        g2.drawString("Run time: " + scriptTimer.toElapsedString(), 20, 327);
+
+        final NPC target = scriptContext.getTargetNpc();
+        if (target != null)
+        {
+            target.getLocation().draw(g2, target.isDead() ? Color.black : scriptContext.getTileColor());
+        }
     }
 }
+

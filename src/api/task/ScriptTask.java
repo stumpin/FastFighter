@@ -1,4 +1,6 @@
-package api.framework;
+package api.task;
+
+import api.ScriptContext;
 
 /**
  * Created by HP xw8400
@@ -7,12 +9,8 @@ package api.framework;
  */
 public abstract class ScriptTask
 {
-    private int priority;
-
-    public ScriptTask()
-    {
-        this.priority = 0;
-    }
+    //protected for cleaner visibility in ScriptTask objects
+    protected ScriptContext context;
 
     /**
      * Determines if the ScriptTask can be performed
@@ -24,15 +22,7 @@ public abstract class ScriptTask
     /**
      * Performs the ScriptTask
      */
-    public abstract int perform();
-
-    /**
-     * @return priority of the task
-     */
-    public int getPriority()
-    {
-        return priority;
-    }
+    public abstract void perform();
 
     /**
      * Returns the name of the task
@@ -42,5 +32,10 @@ public abstract class ScriptTask
     public String getName()
     {
         return getClass().getSimpleName();
+    }
+
+    public void setContext(final ScriptContext context)
+    {
+        this.context = context;
     }
 }
