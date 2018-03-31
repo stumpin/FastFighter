@@ -24,15 +24,14 @@ import java.util.Arrays;
  * Date: 3/16/2018.
  */
 
-@Manifest(authors = { "Jake" }, name = "Alora Fast Fighter", description = "Fights anything, loots anything")
+@Manifest(authors = { "Kumalo" }, name = "Soulplay Fast Fighter", description = "Fights anything, loots anything")
 
 public class FastFighter extends ActiveScript implements PaintListener
 {
     private Timer scriptTimer;
-    private GUI scriptGUI;
     private ScriptContext scriptContext;
     private TaskManager manager;
-    private final double VERSION = 1.1;
+    private final double VERSION = 1.3;
     private final Color TRANS_BLACK = new Color(0, 0, 0, 127);
 
     @Override
@@ -47,7 +46,7 @@ public class FastFighter extends ActiveScript implements PaintListener
 
         scriptContext = new ScriptContext();
 
-        scriptGUI = new GUI(scriptContext);
+        final GUI scriptGUI = new GUI(scriptContext);
         scriptGUI.setVisible(true);
 
         while (scriptGUI.isVisible())
@@ -64,37 +63,25 @@ public class FastFighter extends ActiveScript implements PaintListener
     @Override
     public int loop()
     {
-        if (Game.isLoggedIn())
-        {
-            manager.getIdealTask().perform();
-            //Arrays.stream(Inventory.getAll(577, 1011)).filter(Item -> (Item != null)).forEach(Item -> Item.interact("open"));
-            Item casket = Inventory.getItem(2717, 2720, 2726);
-            if (casket != null)
-            {
-                casket.interact("open");
-                Time.sleep(1200);
-            }
-        }
-
-        return 50;
+        return Game.isLoggedIn() ? manager.getIdealTask().perform() : 500;
     }
 
 
     @Override
     public void repaint(Graphics g)
     {
-        Graphics2D g2 = (Graphics2D) g;
+        g.setColor(TRANS_BLACK);
+        g.fillRect(0, 305, 516, 33);
 
-        g2.setColor(TRANS_BLACK);
-        g2.fillRect(0, 305, 516, 33);
-
-        g2.setColor(Color.WHITE);
-        g2.drawString("Run time: " + scriptTimer.toElapsedString(), 20, 327);
+        g.setColor(Color.WHITE);
+        g.drawString("Run time: " + scriptTimer.toElapsedString(), 20, 327);
+        g.drawString("Fast Fighter V" + VERSION, 220, 327);
+        g.drawString("Task: " + manager.getCurrentTask().getName(), 420, 327);
 
         final NPC target = scriptContext.getTargetNpc();
         if (target != null)
         {
-            target.getLocation().draw(g2, target.isDead() ? Color.black : scriptContext.getTileColor());
+            target.getLocation().draw(g, target.isDead() ? Color.black : scriptContext.getTileColor());
         }
     }
 }

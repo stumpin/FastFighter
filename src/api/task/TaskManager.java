@@ -27,8 +27,8 @@ public class TaskManager
         }
         defaultTask = new Idler();
 
-        Consumer.ConsumptionType.HEAL.setID(context.getFighterProfile().getFoodID());
-        Consumer.ConsumptionType.RESTORE.setID(ScriptContext.RESTORE_IDS);
+        Consumer.ConsumptionType.HEAL.setIDs(context.getFighterProfile().getFoodID());
+        Consumer.ConsumptionType.RESTORE.setIDs(3030, 3028, 3026, 3024);
     }
 
     /**
@@ -46,6 +46,8 @@ public class TaskManager
                 return task;
             }
         }
+
+        currentTask = defaultTask;
         return defaultTask;
     }
 

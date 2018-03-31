@@ -34,7 +34,7 @@ public class Looter extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         groundItems.forEach(groundItem ->
         {
@@ -68,5 +68,6 @@ public class Looter extends ScriptTask
                 }, 7500);
             }
         });
+        return 50;
     }
 }

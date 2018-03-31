@@ -22,19 +22,19 @@ public abstract class ScriptTask
     /**
      * Performs the ScriptTask
      */
-    public abstract void perform();
+    public abstract int perform();
 
     /**
      * Returns the name of the task
      *
      * @return task name
      */
-    public String getName()
+    public final String getName()
     {
         return getClass().getSimpleName();
     }
 
-    public void setContext(final ScriptContext context)
+    protected void setContext(final ScriptContext context)
     {
         this.context = context;
     }

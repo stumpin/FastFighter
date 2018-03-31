@@ -21,11 +21,6 @@ public class ScriptContext
     private NPC target;
     private Color tileColor;
 
-    public static final int RESTORE_IDS[] = {
-            3030, 3028, 3026, 3024, //restores
-            143, 141, 139, 2434 //prayers
-    };
-
     public ScriptContext()
     {
         profile = new FighterProfile();

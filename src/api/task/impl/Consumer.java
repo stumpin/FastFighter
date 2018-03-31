@@ -1,6 +1,7 @@
 package api.task.impl;
 
 import api.task.ScriptTask;
+import xobot.script.methods.input.KeyBoard;
 import xobot.script.methods.tabs.*;
 import xobot.script.util.Time;
 import xobot.script.wrappers.interactive.Item;
@@ -35,9 +36,9 @@ public class Consumer extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
-        currentType.consume();
+        return currentType.consume() ? 50 : -1;
     }
 
     public enum ConsumptionType implements Consume
@@ -53,13 +54,19 @@ public class Consumer extends ScriptTask
             this.action = action;
         }
 
-        public void consume()
+        public boolean consume()
         {
             final Item item = Inventory.getItem(ids);
             if (item != null)
             {
                 item.interact(action);
                 Time.sleep(750);
+                return true;
+            }
+            else
+            {
+                KeyBoard.typeWord("::home", true);
+                return false;
             }
         }
 
@@ -68,7 +75,7 @@ public class Consumer extends ScriptTask
             return action;
         }
 
-        public void setID(int... ids)
+        public void setIDs(int... ids)
         {
             this.ids = ids;
         }
@@ -78,6 +85,6 @@ public class Consumer extends ScriptTask
     {
         String getAction();
 
-        void consume();
+        boolean consume();
     }
 }

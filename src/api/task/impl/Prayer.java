@@ -31,7 +31,7 @@ public class Prayer extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         Time.sleep(300); //in case the bot just logged in
         prayers.forEach(prayer ->
@@ -46,5 +46,6 @@ public class Prayer extends ScriptTask
                 }
             }, 3000);
         });
+        return 50;
     }
 }

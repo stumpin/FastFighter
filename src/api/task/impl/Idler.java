@@ -16,8 +16,9 @@ public class Idler extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         //< --- | DOES NOTHING | --- >\\
+        return 50;
     }
 }

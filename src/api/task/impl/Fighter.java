@@ -26,7 +26,7 @@ public class Fighter extends ScriptTask
     }
 
     @Override
-    public void perform()
+    public int perform()
     {
         final NPC target = NPCs.getNearest(new Filter<NPC>()
         {
@@ -56,5 +56,6 @@ public class Fighter extends ScriptTask
                 }
             }, 5000)) ? Color.GREEN : Color.RED);
         }
+        return 50;
     }
 }
