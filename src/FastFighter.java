@@ -24,7 +24,7 @@ import java.util.Arrays;
  * Date: 3/16/2018.
  */
 
-@Manifest(authors = { "Kumalo" }, name = "Soulplay Fast Fighter", description = "Fights anything, loots anything")
+@Manifest(authors = { "Kumalo" }, name = "Soulplay Fast ", description = "Fights anything, loots anything")
 
 public class FastFighter extends ActiveScript implements PaintListener
 {

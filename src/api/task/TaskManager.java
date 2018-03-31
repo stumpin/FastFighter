@@ -26,6 +26,7 @@ public class TaskManager
             addTask(task);
         }
         defaultTask = new Idler();
+        currentTask = defaultTask;
 
         Consumer.ConsumptionType.HEAL.setIDs(context.getFighterProfile().getFoodID());
         Consumer.ConsumptionType.RESTORE.setIDs(3030, 3028, 3026, 3024);
