@@ -22,7 +22,7 @@ public class Fighter extends ScriptTask
     @Override
     public boolean canPerform()
     {
-        return Players.getMyPlayer().getInteractingCharacter() == null;
+        return Players.getMyPlayer().getInteractingIndex() == -1;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class Fighter extends ScriptTask
                 @Override
                 public Boolean call() throws Exception
                 {
-                    return Players.getMyPlayer().getInteractingCharacter() != null;
+                    return Players.getMyPlayer().getInteractingIndex() != -1;
                 }
             }, 5000)) ? Color.GREEN : Color.RED);
         }
