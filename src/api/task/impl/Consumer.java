@@ -11,24 +11,20 @@ import xobot.script.wrappers.interactive.Item;
  * Author: Jacob
  * Date: 3/25/2018.
  */
-public class Consumer extends ScriptTask
-{
+public class Consumer extends ScriptTask {
+
     private ConsumptionType currentType;
 
     @Override
-    public boolean canPerform()
-    {
+    public boolean canPerform() {
         boolean needConsume = false;
         /*
          * prioritize eating
          */
-        if (Skills.getCurrentLevel(Skills.CONSTITUTION) < context.getFighterProfile().getEatAt())
-        {
+        if (Skills.CONSTITUTION.getCurrentLevel() < context.getFighterProfile().getEatAt()) {
             currentType = ConsumptionType.HEAL;
             needConsume = true;
-        }
-        else if (xobot.script.methods.tabs.Prayer.getPointPercentage() < 20)
-        {
+        } else if (xobot.script.methods.tabs.Prayer.getPointPercentage() < 20) {
             currentType = ConsumptionType.RESTORE;
             needConsume = true;
         }
@@ -36,53 +32,43 @@ public class Consumer extends ScriptTask
     }
 
     @Override
-    public int perform()
-    {
+    public int perform() {
         return currentType.consume() ? 50 : -1;
     }
 
-    public enum ConsumptionType implements Consume
-    {
+    public enum ConsumptionType implements Consume {
         HEAL("eat"),
         RESTORE("drink");
 
         private String action;
         private int[] ids;
 
-        ConsumptionType(String action)
-        {
+        ConsumptionType(String action) {
             this.action = action;
         }
 
-        public boolean consume()
-        {
-            final Item item = Inventory.getItem(ids);
-            if (item != null)
-            {
+        public boolean consume() {
+            Item item = Inventory.getItem(ids);
+            if (item != null) {
                 item.interact(action);
                 Time.sleep(750);
                 return true;
-            }
-            else
-            {
+            } else {
                 KeyBoard.typeWord("::home", true);
                 return false;
             }
         }
 
-        public String getAction()
-        {
+        public String getAction() {
             return action;
         }
 
-        public void setIDs(int... ids)
-        {
+        public void setIDs(int... ids) {
             this.ids = ids;
         }
     }
 
-    public interface Consume
-    {
+    public interface Consume {
         String getAction();
 
         boolean consume();

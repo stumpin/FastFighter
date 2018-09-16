@@ -22,8 +22,8 @@ import java.util.HashMap;
  * Author: Jacob
  * Date: 3/16/2018.
  */
-public class GUI extends JFrame
-{
+public class GUI extends JFrame {
+
     private boolean completed;
     private final ScriptContext context;
     private final DefaultListModel allNPCsModel;
@@ -35,8 +35,7 @@ public class GUI extends JFrame
     private final JSlider eatHP;
     private final JLabel eat;
 
-    public GUI(final ScriptContext context)
-    {
+    public GUI(final ScriptContext context) {
         super("Alora Fast Fighter");
         this.setLayout(new BorderLayout());
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -54,15 +53,12 @@ public class GUI extends JFrame
 
         };
         lootModel = new DefaultTableModel(data, columns);
-        lootTable = new JTable(lootModel)
-        {
+        lootTable = new JTable(lootModel) {
             private static final long serialVersionUID = 1L;
 
             @Override
-            public Class getColumnClass(int column)
-            {
-                switch (column)
-                {
+            public Class getColumnClass(int column) {
+                switch (column) {
                     case 0:
                         return Integer.class;
                     default:
@@ -80,20 +76,16 @@ public class GUI extends JFrame
         this.setLocationRelativeTo(getOwner());
     }
 
-    public void addMenuBar()
-    {
+    public void addMenuBar() {
         final JMenuBar menuBar = new JMenuBar();
         final JMenu presets = new JMenu("Presets");
 
         final JMenuItem save = new JMenuItem("Save", new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/FOOCAMI.png", 18, 18)));
-        save.addActionListener(new ActionListener()
-        {
+        save.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e)
-            {
+            public void actionPerformed(ActionEvent e) {
                 String name = JOptionPane.showInputDialog(null, "Enter profile name:", "Profile Saver", JOptionPane.PLAIN_MESSAGE);
-                if (name != null && name.length() > 0)
-                {
+                if (name != null && name.length() > 0) {
                     //before dumping profile, update the lists that don't update via listeners
                     updateLootList();
                     updatePrayerList();
@@ -104,22 +96,18 @@ public class GUI extends JFrame
         });
 
         final JMenuItem load = new JMenuItem("Load", new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/H0qH08L.png", 18, 18)));
-        load.addActionListener(new ActionListener()
-        {
+        load.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e)
-            {
+            public void actionPerformed(ActionEvent e) {
                 final JFileChooser saveChooser = new JFileChooser(ScriptContext.getXobotPath() + "\\FastFighterProfiles");
-                if (saveChooser.showOpenDialog(null) == JFileChooser.OPEN_DIALOG)
-                {
+                if (saveChooser.showOpenDialog(null) == JFileChooser.OPEN_DIALOG) {
                     context.setFighterProfile(ScriptContext.loadProfile(saveChooser.getSelectedFile()));
                     ///////// UPDATE THE GUI \\\\\\\\\\\\\
                     myNPCsModel.clear();
                     context.getFighterProfile().getNpcIDs().forEach(id -> myNPCsModel.addElement(id));
 
                     lootModel.setRowCount(0);
-                    context.getFighterProfile().getLootIDs().forEach(id ->
-                    {
+                    context.getFighterProfile().getLootIDs().forEach(id -> {
                         Object[] o = new Object[]{
                                 id, false
                         };
@@ -130,14 +118,10 @@ public class GUI extends JFrame
                     eat.setText("Eating at: " + context.getFighterProfile().getEatAt());
                     eatHP.setValue(context.getFighterProfile().getEatAt());
 
-                    prayerMap.forEach((box, prayer) ->
-                    {
-                        if (context.getFighterProfile().getDesiredPrayers().contains(prayer))
-                        {
+                    prayerMap.forEach((box, prayer) -> {
+                        if (context.getFighterProfile().getDesiredPrayers().contains(prayer)) {
                             box.setSelected(true);
-                        }
-                        else
-                        {
+                        } else {
                             box.setSelected(false);
                         }
                     });
@@ -155,20 +139,16 @@ public class GUI extends JFrame
         this.add(menuBar, BorderLayout.NORTH);
     }
 
-    private void addComponents()
-    {
+    private void addComponents() {
         final JTabbedPane guiPane = new JTabbedPane();
 
         final JButton start = new JButton("Start Script");
         start.setToolTipText("Start the script");
-        start.addActionListener((ActionEvent e) ->
-        {
+        start.addActionListener((ActionEvent e) -> {
             completed = true;
 
-            prayerMap.forEach((box, prayer) ->
-            {
-                if (box.isSelected())
-                {
+            prayerMap.forEach((box, prayer) -> {
+                if (box.isSelected()) {
                     context.getFighterProfile().getDesiredPrayers().add(prayer);
                 }
             });
@@ -193,11 +173,9 @@ public class GUI extends JFrame
         {
             public void keyPressed(KeyEvent e)
             {
-                if (e.getKeyCode() == KeyEvent.VK_DELETE)
-                {
+                if (e.getKeyCode() == KeyEvent.VK_DELETE) {
                     final Object value = myNPCsList.getSelectedValue();
-                    if (value != null)
-                    {
+                    if (value != null) {
                         myNPCsModel.removeElement(value);
                     }
                 }
@@ -218,17 +196,14 @@ public class GUI extends JFrame
         final JButton npcLoader = new JButton("Load NPCs");
         npcLoader.setBounds(75, 285, 125, 27);
         npcLoader.setToolTipText("Loads cached NPCs around local player");
-        npcLoader.addActionListener((ActionEvent e) ->
-        {
+        npcLoader.addActionListener((ActionEvent e) -> {
             allNPCsModel.clear();
 
-            for (NPC npc : NPCs.getAll())
-            {
+            for (NPC npc : NPCs.getAll()) {
                 /*
                  * prevents 1, prevents duplicates
                  */
-                if (npc != null && npc.getId() != 1 && !allNPCsModel.contains(npc.getId()))
-                {
+                if (npc != null && npc.getId() != 1 && !allNPCsModel.contains(npc.getId())) {
                     allNPCsModel.addElement(npc.getId());
                 }
             }
@@ -238,13 +213,10 @@ public class GUI extends JFrame
         final JButton shifter = new JButton(new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/g71i0Kj.png", 18, 18)));
         shifter.setBounds(250, 285, 40, 27);
         shifter.setToolTipText("Shift over an npc to your list");
-        shifter.addActionListener((ActionEvent e) ->
-        {
-            if (!allNPCsList.isSelectionEmpty())
-            {
+        shifter.addActionListener((ActionEvent e) -> {
+            if (!allNPCsList.isSelectionEmpty()) {
                 final Object value = allNPCsList.getSelectedValue();
-                if (value != null &&  !myNPCsModel.contains(value))
-                {
+                if (value != null &&  !myNPCsModel.contains(value)) {
                     myNPCsModel.addElement(value);
                     context.getFighterProfile().getNpcIDs().add((int) value);
                 }
@@ -255,8 +227,7 @@ public class GUI extends JFrame
         final JButton npcClearer = new JButton("Clear all");
         npcClearer.setBounds(340, 285, 125, 27);
         npcClearer.setToolTipText("Clear all elements in NPC list");
-        npcClearer.addActionListener((ActionEvent e) ->
-        {
+        npcClearer.addActionListener((ActionEvent e) -> {
             myNPCsModel.clear();
             context.getFighterProfile().getNpcIDs().clear();
         });
@@ -272,8 +243,7 @@ public class GUI extends JFrame
         {
             public void keyPressed(KeyEvent e)
             {
-                if (e.getKeyCode() == KeyEvent.VK_DELETE && lootTable.getSelectedRow() != -1)
-                {
+                if (e.getKeyCode() == KeyEvent.VK_DELETE && lootTable.getSelectedRow() != -1) {
                     lootModel.removeRow(lootTable.getSelectedRow());
                 }
             }
@@ -286,8 +256,7 @@ public class GUI extends JFrame
         adder.setOpaque(false);
         adder.setFocusable(false);
         adder.setToolTipText("Add a row");
-        adder.addActionListener((ActionEvent e) ->
-        {
+        adder.addActionListener((ActionEvent e) -> {
             Object[] o = new Object[] {
                     null, false
             };
@@ -304,8 +273,7 @@ public class GUI extends JFrame
         final JPanel prayerBox = new JPanel();
         prayerBox.setLayout(new BoxLayout(prayerBox, BoxLayout.Y_AXIS));
 
-        Arrays.stream(Prayer.Prayers.values()).forEach(entry ->
-        {
+        Arrays.stream(Prayer.Prayers.values()).forEach(entry -> {
             JCheckBox box = new JCheckBox(entry.getName());
             prayerMap.put(box, entry);
             prayerBox.add(box);
@@ -322,8 +290,7 @@ public class GUI extends JFrame
         miscPanel.add(food);
 
         foodId.setBounds(380, 20, 60, 20);
-        foodId.getDocument().addDocumentListener(new DocumentListener()
-        {
+        foodId.getDocument().addDocumentListener(new DocumentListener() {
             public void changedUpdate(DocumentEvent e)
             {
                 update();
@@ -356,8 +323,7 @@ public class GUI extends JFrame
         eatHP.setBounds(275, 120, 235, 50);
         eatHP.setPaintTicks(true);
         eatHP.setPaintLabels(true);
-        eatHP.addChangeListener((ChangeEvent e) ->
-        {
+        eatHP.addChangeListener((ChangeEvent e) -> {
             context.getFighterProfile().setEatAt(eatHP.getValue());
             eat.setText("Eating at: " + context.getFighterProfile().getEatAt());
         });
@@ -371,26 +337,20 @@ public class GUI extends JFrame
         this.add(start, BorderLayout.SOUTH);
     }
 
-    private void updateLootList()
-    {
+    private void updateLootList() {
         context.getFighterProfile().getLootIDs().clear();
-        for (int i = 0; i < lootTable.getRowCount(); i++)
-        {
+        for (int i = 0; i < lootTable.getRowCount(); i++) {
             Object value = lootTable.getModel().getValueAt(i, 0);
-            if (value != null)
-            {
+            if (value != null) {
                 context.getFighterProfile().getLootIDs().add((int) value);
             }
         }
     }
 
-    private void updatePrayerList()
-    {
+    private void updatePrayerList() {
         context.getFighterProfile().getDesiredPrayers().clear();
-        prayerMap.forEach((box, prayer) ->
-        {
-            if (box.isSelected())
-            {
+        prayerMap.forEach((box, prayer) -> {
+            if (box.isSelected()) {
                 context.getFighterProfile().getDesiredPrayers().add(prayer);
             }
         });
@@ -401,15 +361,11 @@ public class GUI extends JFrame
         return completed;
     }
 
-    private boolean isNumber(String str)
-    {
-        try
-        {
+    private boolean isNumber(String str) {
+        try {
             Integer.parseInt(str);
             return true;
-        }
-        catch (NumberFormatException e)
-        {
+        } catch (NumberFormatException e) {
             return false;
         }
     }

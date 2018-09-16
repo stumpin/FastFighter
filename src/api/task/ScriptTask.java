@@ -7,8 +7,7 @@ import api.ScriptContext;
  * Author: Jacob
  * Date: 1/2/2018.
  */
-public abstract class ScriptTask
-{
+public abstract class ScriptTask {
     //protected for cleaner visibility in ScriptTask objects
     protected ScriptContext context;
 
@@ -29,13 +28,11 @@ public abstract class ScriptTask
      *
      * @return task name
      */
-    public final String getName()
-    {
+    public final String getName() {
         return getClass().getSimpleName();
     }
 
-    protected void setContext(final ScriptContext context)
-    {
+    protected void setContext(final ScriptContext context) {
         this.context = context;
     }
 }

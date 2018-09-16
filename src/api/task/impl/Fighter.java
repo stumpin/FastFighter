@@ -17,41 +17,29 @@ import java.util.concurrent.Callable;
  * Author: Jacob
  * Date: 3/25/2018.
  */
-public class Fighter extends ScriptTask
-{
+public class Fighter extends ScriptTask {
+
     @Override
-    public boolean canPerform()
-    {
+    public boolean canPerform() {
         return Players.getMyPlayer().getInteractingIndex() == -1;
     }
 
     @Override
-    public int perform()
-    {
-        final NPC target = NPCs.getNearest(new Filter<NPC>()
-        {
+    public int perform() {
+        final NPC target = NPCs.getNearest(new Filter<NPC>() {
             @Override
-            public boolean accept(NPC npc)
-            {
-                if (npc == null)
-                {
-                    return false;
-                }
+            public boolean accept(NPC npc) {
                 final Character interacting = npc.getInteractingCharacter();
-
                 return context.getFighterProfile().getNpcIDs().contains(npc.getId()) && npc.isReachable() && !npc.isDead() && (!npc.isInCombat() || (interacting != null && interacting.equals(Player.getMyPlayer())));
             }
         });
-        if (target != null)
-        {
+        if (target != null) {
             context.setTargetNpc(target);
             context.setTileColor(Color.YELLOW);
             target.interact("attack");
-            context.setTileColor((Time.sleep(new Callable<Boolean>()
-            {
+            context.setTileColor((Time.sleep(new Callable<Boolean>() {
                 @Override
-                public Boolean call() throws Exception
-                {
+                public Boolean call() throws Exception {
                     return Players.getMyPlayer().getInteractingIndex() != -1;
                 }
             }, 5000)) ? Color.GREEN : Color.RED);

@@ -12,18 +12,15 @@ import java.util.concurrent.Callable;
  * Author: Jacob
  * Date: 3/25/2018.
  */
-public class Prayer extends ScriptTask
-{
+public class Prayer extends ScriptTask {
+
     private final ArrayList<Prayers> prayers = new ArrayList<>();
 
     @Override
-    public boolean canPerform()
-    {
+    public boolean canPerform() {
         prayers.clear();
-        for (Prayers prayer : context.getFighterProfile().getDesiredPrayers())
-        {
-            if (!prayer.isActivated())
-            {
+        for (Prayers prayer : context.getFighterProfile().getDesiredPrayers()) {
+            if (!prayer.isActivated()) {
                 prayers.add(prayer);
             }
         }
@@ -31,17 +28,13 @@ public class Prayer extends ScriptTask
     }
 
     @Override
-    public int perform()
-    {
-        Time.sleep(300); //in case the bot just logged in
-        prayers.forEach(prayer ->
-        {
+    public int perform() {
+        Time.sleep(500); //in case the bot just logged in
+        prayers.forEach(prayer -> {
             prayer.Activate();
-            Time.sleep(new Callable<Boolean>()
-            {
+            Time.sleep(new Callable<Boolean>() {
                 @Override
-                public Boolean call() throws Exception
-                {
+                public Boolean call() throws Exception {
                     return prayer.isActivated();
                 }
             }, 3000);

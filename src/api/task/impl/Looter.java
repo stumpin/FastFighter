@@ -15,18 +15,15 @@ import java.util.concurrent.Callable;
  * Author: Jacob
  * Date: 3/25/2018.
  */
-public class Looter extends ScriptTask
-{
+public class Looter extends ScriptTask {
+
     private final ArrayList<GroundItem> groundItems = new ArrayList<>();
 
     @Override
-    public boolean canPerform()
-    {
+    public boolean canPerform() {
         groundItems.clear();
-        for (GroundItem item : GroundItems.getAll())
-        {
-            if (item != null && context.getFighterProfile().getLootIDs().contains(item.getItem().getID()) && item.getLocation().isReachable())
-            {
+        for (GroundItem item : GroundItems.getAll()) {
+            if (item != null && context.getFighterProfile().getLootIDs().contains(item.getItem().getID()) && item.getLocation().isReachable()) {
                 groundItems.add(item);
             }
         }
@@ -34,38 +31,23 @@ public class Looter extends ScriptTask
     }
 
     @Override
-    public int perform()
-    {
-        groundItems.forEach(groundItem ->
-        {
-            if (Inventory.isFull())
-            {
+    public int perform() {
+        groundItems.forEach(groundItem -> {
+            if (Inventory.isFull()) {
                 final Item vialOrFood = Inventory.getItem(229, context.getFighterProfile().getFoodID());
-                if (vialOrFood != null)
-                {
-                    if (vialOrFood.hasAction("Eat"))
-                    {
+                if (vialOrFood != null) {
+                    if (vialOrFood.hasAction("Eat")) {
                         vialOrFood.interact("eat");
-                    }
-                    else
-                    {
+                    } else {
                         vialOrFood.interact("drop");
                     }
                 }
             }
             //if the bot managed to make room for the item
-            if (Time.sleep(() -> !Inventory.isFull(), 3000))
-            {
+            if (Time.sleep(() -> !Inventory.isFull(), 3000)) {
                 int oldCount = Inventory.getRealCount();
                 groundItem.getItem().interact("take");
-                Time.sleep(new Callable<Boolean>()
-                {
-                    @Override
-                    public Boolean call() throws Exception
-                    {
-                        return Inventory.getRealCount() > oldCount;
-                    }
-                }, 7500);
+                Time.sleep(() -> Inventory.getRealCount() > oldCount, 7500);
             }
         });
         return 50;

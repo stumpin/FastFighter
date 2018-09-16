@@ -10,16 +10,15 @@ import java.util.ArrayList;
  * Author: Jacob
  * Date: 3/16/2018.
  */
-public class FighterProfile implements Serializable
-{
+public class FighterProfile implements Serializable {
+
     private final ArrayList<Integer> lootIDs;
     private final ArrayList<Integer> npcIDs;
     private final ArrayList<Prayer.Prayers> prayers;
     private int foodID;
     private int eatAt;
 
-    public FighterProfile()
-    {
+    public FighterProfile() {
         lootIDs = new ArrayList<>();
         npcIDs = new ArrayList<>();
         prayers = new ArrayList<>();
@@ -27,38 +26,31 @@ public class FighterProfile implements Serializable
         eatAt = 50;
     }
 
-    public ArrayList<Integer> getLootIDs()
-    {
+    public ArrayList<Integer> getLootIDs() {
         return lootIDs;
     }
 
-    public ArrayList<Integer> getNpcIDs()
-    {
+    public ArrayList<Integer> getNpcIDs() {
         return npcIDs;
     }
 
-    public ArrayList<Prayer.Prayers> getDesiredPrayers()
-    {
+    public ArrayList<Prayer.Prayers> getDesiredPrayers() {
         return prayers;
     }
 
-    public int getFoodID()
-    {
+    public int getFoodID() {
         return foodID;
     }
 
-    public int getEatAt()
-    {
+    public int getEatAt() {
         return eatAt;
     }
 
-    public void setFoodID(int newID)
-    {
+    public void setFoodID(int newID) {
         foodID = newID;
     }
 
-    public void setEatAt(int newHealth)
-    {
+    public void setEatAt(int newHealth) {
         eatAt = newHealth;
     }
 }

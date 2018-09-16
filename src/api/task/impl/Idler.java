@@ -7,8 +7,7 @@ import api.task.ScriptTask;
  * Author: Jacob
  * Date: 3/7/2018.
  */
-public class Idler extends ScriptTask
-{
+public class Idler extends ScriptTask {
     @Override
     public boolean canPerform()
     {
@@ -16,8 +15,7 @@ public class Idler extends ScriptTask
     }
 
     @Override
-    public int perform()
-    {
+    public int perform() {
         //< --- | DOES NOTHING | --- >\\
         return 50;
     }

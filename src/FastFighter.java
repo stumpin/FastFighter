@@ -8,9 +8,12 @@ import xobot.client.callback.listeners.PaintListener;
 import xobot.script.ActiveScript;
 import xobot.script.Manifest;
 import xobot.script.methods.Game;
+import xobot.script.methods.GameObjects;
+import xobot.script.methods.Packets;
 import xobot.script.methods.tabs.Inventory;
 import xobot.script.util.Time;
 import xobot.script.util.Timer;
+import xobot.script.wrappers.interactive.GameObject;
 import xobot.script.wrappers.interactive.Item;
 import xobot.script.wrappers.interactive.NPC;
 
@@ -24,33 +27,30 @@ import java.util.Arrays;
  * Date: 3/16/2018.
  */
 
-@Manifest(authors = { "Kumalo" }, name = "Soulplay Fast Fighter", description = "Fights anything, loots anything")
+@Manifest(authors = { "Kumalo" }, name = "Soulplay Fast Fighter", description = "Fights anything, loots anything", version = 1.3)
 
-public class FastFighter extends ActiveScript implements PaintListener
-{
+public class FastFighter extends ActiveScript implements PaintListener {
+
     private Timer scriptTimer;
     private ScriptContext scriptContext;
     private TaskManager manager;
-    private final double VERSION = 1.3;
-    private final Color TRANS_BLACK = new Color(0, 0, 0, 127);
+    private final Color black = new Color(0, 0, 0, 127);
 
     @Override
-    public boolean onStart()
-    {
+    public boolean onStart() {
+
         final File profiles = new File(ScriptContext.getXobotPath() + "FastFighterProfiles");
 
-        if (!profiles.exists())
-        {
+        if (!profiles.exists()) {
             profiles.mkdir();
         }
 
         scriptContext = new ScriptContext();
 
-        final GUI scriptGUI = new GUI(scriptContext);
+        GUI scriptGUI = new GUI(scriptContext);
         scriptGUI.setVisible(true);
 
-        while (scriptGUI.isVisible())
-        {
+        while (scriptGUI.isVisible()) {
             Time.sleep(250);
         }
 
@@ -61,26 +61,23 @@ public class FastFighter extends ActiveScript implements PaintListener
     }
 
     @Override
-    public int loop()
-    {
-        return Game.isLoggedIn() ? manager.getIdealTask().perform() : 500;
+    public int loop() {
+         return Game.isLoggedIn() ? manager.getIdealTask().perform() : 500;
     }
 
 
     @Override
-    public void repaint(Graphics g)
-    {
-        g.setColor(TRANS_BLACK);
+    public void repaint(Graphics g) {
+        g.setColor(black);
         g.fillRect(0, 305, 516, 33);
 
         g.setColor(Color.WHITE);
         g.drawString("Run time: " + scriptTimer.toElapsedString(), 20, 327);
-        g.drawString("Fast Fighter V" + VERSION, 220, 327);
+        g.drawString("Fast Fighter V" + this.getClass().getAnnotation(Manifest.class).version(), 220, 327);
         g.drawString("Task: " + manager.getCurrentTask().getName(), 420, 327);
 
         final NPC target = scriptContext.getTargetNpc();
-        if (target != null)
-        {
+        if (target != null) {
             target.getLocation().draw(g, target.isDead() ? Color.black : scriptContext.getTileColor());
         }
     }
