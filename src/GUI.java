@@ -1,372 +1,282 @@
-import api.ScriptContext;
+import com.sun.javafx.application.PlatformImpl;
+
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.*;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import xobot.script.Manifest;
 import xobot.script.methods.NPCs;
-import xobot.script.methods.tabs.Prayer;
+import xobot.script.wrappers.Tile;
 import xobot.script.wrappers.interactive.NPC;
+import xobot.script.wrappers.interactive.Player;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.io.File;
+import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
 
 /**
  * Created by HP xw8400
  * Author: Jacob
- * Date: 3/16/2018.
+ * Date: 10/4/2018.
  */
-public class GUI extends JFrame {
+public class GUI extends Application {
 
-    private boolean completed;
-    private final ScriptContext context;
-    private final DefaultListModel allNPCsModel;
-    private final DefaultListModel myNPCsModel;
-    private final DefaultTableModel lootModel;
-    private final JTable lootTable;
-    private final HashMap<JCheckBox, Prayer.Prayers> prayerMap;
-    private final JTextField foodId;
-    private final JSlider eatHP;
-    private final JLabel eat;
+    private FastFigher fighter;
+    private boolean isFinished = false;
+    private final ArrayList<RSTileBox> tiles = new ArrayList<>();
+    private final ObservableList<String> loaded = FXCollections.observableArrayList(), selected = FXCollections.observableArrayList();
 
-    public GUI(final ScriptContext context) {
-        super("Alora Fast Fighter");
-        this.setLayout(new BorderLayout());
-        this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        this.setResizable(false);
-        this.setPreferredSize(new Dimension(550, 425));
-        this.context = context;
-        completed = false;
-        allNPCsModel = new DefaultListModel();
-        myNPCsModel = new DefaultListModel();
-        final String[] columns = {
-                "ID", "Stackable"
-        };
-        final Object[][] data = new Object[][]{
-                {null, false}
-
-        };
-        lootModel = new DefaultTableModel(data, columns);
-        lootTable = new JTable(lootModel) {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public Class getColumnClass(int column) {
-                switch (column) {
-                    case 0:
-                        return Integer.class;
-                    default:
-                        return Boolean.class;
-                }
-            }
-        };
-        prayerMap = new HashMap<>();
-        foodId = new JTextField("385");
-        eatHP = new JSlider(5, 90, 50);
-        eat = new JLabel("Eating at: " + context.getFighterProfile().getEatAt());
-        addMenuBar();
-        addComponents();
-        this.pack();
-        this.setLocationRelativeTo(getOwner());
+    public GUI(FastFigher script) {
+        this.fighter = script;
+        //internally set up javaFX
+        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+            System.setProperty("glass.win.uiScale", "100%");
+            System.setProperty("glass.win.renderScale", "100%");
+            return null;
+        });
+        PlatformImpl.startup(() -> { });
+        Platform.runLater(() -> {
+            start(new Stage());
+            Platform.setImplicitExit(false);
+        });
     }
 
-    public void addMenuBar() {
-        final JMenuBar menuBar = new JMenuBar();
-        final JMenu presets = new JMenu("Presets");
+    @Override
+    public void start(Stage stage) {
+        final TabPane tabPane = new TabPane(createGeneralTab(), createConfigTab(), createConstraintsTab());
+        final BorderPane master = new BorderPane(tabPane);
+        final Scene scene = new Scene(master, 500, 450);
 
-        final JMenuItem save = new JMenuItem("Save", new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/FOOCAMI.png", 18, 18)));
-        save.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String name = JOptionPane.showInputDialog(null, "Enter profile name:", "Profile Saver", JOptionPane.PLAIN_MESSAGE);
-                if (name != null && name.length() > 0) {
-                    //before dumping profile, update the lists that don't update via listeners
-                    updateLootList();
-                    updatePrayerList();
+        master.setTop(createMenu());
+        master.setBottom(createStartBox(stage));
 
-                    ScriptContext.dumpProfile(context.getFighterProfile(), name);
+        try {
+            scene.getStylesheets().add(new URL("https://pastebin.com/raw/CvjAGgUy").toString());
+        } catch (Exception e) {
+            System.out.println("Could not load GUI style sheet - using default styling");
+            e.printStackTrace();
+        }
+        stage.setResizable(false);
+        stage.setTitle("Fast Fighter");
+        stage.setScene(scene);
+        stage.centerOnScreen();
+        stage.show();
+    }
+
+    private MenuBar createMenu() {
+        final MenuItem load = new MenuItem("Load");
+        load.setOnAction(action -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select Fighter profile");
+            fileChooser.setInitialDirectory(new File(fighter.getXobotPath() + "FastFighterProfiles"));
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Serialized profiles", "*.serialized"));
+            File selectedFile = fileChooser.showOpenDialog(new Stage());
+            if (selectedFile != null) {
+                //handle profile setting loading
+            }
+        });
+
+        final MenuItem save = new MenuItem("Save");
+        final Menu menu     = new Menu("File", null, load, save);
+        return new MenuBar(menu);
+    }
+
+    private Tab createGeneralTab() {
+        final GridPane general = new GridPane();
+        final Tab generalTab   = new Tab("General", general);
+        general.setPadding(new Insets(20, 20, 20, 20));
+        general.setHgap(20);
+        general.setVgap(20);
+        generalTab.setClosable(false);
+
+        final ListView loadedIds = new ListView(loaded);
+        loadedIds.setPrefSize(200, 200);
+        loadedIds.setEditable(false);
+        loadedIds.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                String token = (String) loadedIds.getSelectionModel().getSelectedItem();
+                if (!selected.contains(token)) {
+                    selected.add(token);
                 }
             }
         });
 
-        final JMenuItem load = new JMenuItem("Load", new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/H0qH08L.png", 18, 18)));
-        load.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                final JFileChooser saveChooser = new JFileChooser(ScriptContext.getXobotPath() + "\\FastFighterProfiles");
-                if (saveChooser.showOpenDialog(null) == JFileChooser.OPEN_DIALOG) {
-                    context.setFighterProfile(ScriptContext.loadProfile(saveChooser.getSelectedFile()));
-                    ///////// UPDATE THE GUI \\\\\\\\\\\\\
-                    myNPCsModel.clear();
-                    context.getFighterProfile().getNpcIDs().forEach(id -> myNPCsModel.addElement(id));
-
-                    lootModel.setRowCount(0);
-                    context.getFighterProfile().getLootIDs().forEach(id -> {
-                        Object[] o = new Object[]{
-                                id, false
-                        };
-                        ((DefaultTableModel) lootTable.getModel()).addRow(o);
-                    });
-
-                    foodId.setText(String.valueOf(context.getFighterProfile().getFoodID()));
-                    eat.setText("Eating at: " + context.getFighterProfile().getEatAt());
-                    eatHP.setValue(context.getFighterProfile().getEatAt());
-
-                    prayerMap.forEach((box, prayer) -> {
-                        if (context.getFighterProfile().getDesiredPrayers().contains(prayer)) {
-                            box.setSelected(true);
-                        } else {
-                            box.setSelected(false);
-                        }
-                    });
-                    context.getFighterProfile().getDesiredPrayers().clear();
+        final ListView selectedIds = new ListView(selected);
+        selectedIds.setPrefSize(200, 200);
+        selectedIds.setEditable(false);
+        selectedIds.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                int index = selectedIds.getSelectionModel().getSelectedIndex();
+                if (index > -1) {
+                    selected.remove(index);
                 }
             }
         });
 
-        presets.add(save);
-        presets.add(load);
-
-        menuBar.add(Box.createHorizontalGlue());
-        menuBar.add(presets);
-
-        this.add(menuBar, BorderLayout.NORTH);
-    }
-
-    private void addComponents() {
-        final JTabbedPane guiPane = new JTabbedPane();
-
-        final JButton start = new JButton("Start Script");
-        start.setToolTipText("Start the script");
-        start.addActionListener((ActionEvent e) -> {
-            completed = true;
-
-            prayerMap.forEach((box, prayer) -> {
-                if (box.isSelected()) {
-                    context.getFighterProfile().getDesiredPrayers().add(prayer);
+        final Button shifter = new Button();
+        final Image image = loadResourceImage("https://i.imgur.com/DCDCRm8.png");
+        if (image != null) {
+            shifter.setGraphic(new ImageView(image));
+        }
+        shifter.setOnAction(action -> {
+            loaded.forEach(id -> {
+                if (!selected.contains(id)) {
+                    selected.add(id);
                 }
             });
-
-            //update the loot list again
-            updateLootList();
-
-            GUI.this.dispose();
-            GUI.this.setVisible(false);
         });
 
-        //////////////////////////////////////////////////////////////////////////////
-
-        final JPanel fightingPanel = new JPanel();
-        fightingPanel.setLayout(null);
-        fightingPanel.setBorder(BorderFactory.createTitledBorder("NPC Selector"));
-
-        final JList allNPCsList = new JList(allNPCsModel);
-        final JList myNPCsList = new JList(myNPCsModel);
-
-        myNPCsList.addKeyListener(new KeyAdapter()
-        {
-            public void keyPressed(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_DELETE) {
-                    final Object value = myNPCsList.getSelectedValue();
-                    if (value != null) {
-                        myNPCsModel.removeElement(value);
-                    }
-                }
-            }
-        });
-
-        allNPCsList.addListSelectionListener((ListSelectionEvent e) -> myNPCsList.clearSelection());
-        myNPCsList.addListSelectionListener((ListSelectionEvent e) -> allNPCsList.clearSelection());
-
-        final JScrollPane allNPCs = new JScrollPane(allNPCsList);
-        allNPCs.setBounds(15, 20, 235, 250);
-        fightingPanel.add(allNPCs);
-
-        final JScrollPane myNPCs = new JScrollPane(myNPCsList);
-        myNPCs.setBounds(290, 20, 230, 250);
-        fightingPanel.add(myNPCs);
-
-        final JButton npcLoader = new JButton("Load NPCs");
-        npcLoader.setBounds(75, 285, 125, 27);
-        npcLoader.setToolTipText("Loads cached NPCs around local player");
-        npcLoader.addActionListener((ActionEvent e) -> {
-            allNPCsModel.clear();
-
+        final Button loader = new Button("Load Npcs");
+        loader.setOnAction(action -> {
+            loaded.clear();
             for (NPC npc : NPCs.getAll()) {
-                /*
-                 * prevents 1, prevents duplicates
-                 */
-                if (npc != null && npc.getId() != 1 && !allNPCsModel.contains(npc.getId())) {
-                    allNPCsModel.addElement(npc.getId());
-                }
-            }
-        });
-        fightingPanel.add(npcLoader);
-
-        final JButton shifter = new JButton(new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/g71i0Kj.png", 18, 18)));
-        shifter.setBounds(250, 285, 40, 27);
-        shifter.setToolTipText("Shift over an npc to your list");
-        shifter.addActionListener((ActionEvent e) -> {
-            if (!allNPCsList.isSelectionEmpty()) {
-                final Object value = allNPCsList.getSelectedValue();
-                if (value != null &&  !myNPCsModel.contains(value)) {
-                    myNPCsModel.addElement(value);
-                    context.getFighterProfile().getNpcIDs().add((int) value);
-                }
-            }
-        });
-        fightingPanel.add(shifter);
-
-        final JButton npcClearer = new JButton("Clear all");
-        npcClearer.setBounds(340, 285, 125, 27);
-        npcClearer.setToolTipText("Clear all elements in NPC list");
-        npcClearer.addActionListener((ActionEvent e) -> {
-            myNPCsModel.clear();
-            context.getFighterProfile().getNpcIDs().clear();
-        });
-        fightingPanel.add(npcClearer);
-
-        //////////////////////////////////////////////////////////
-
-        final JPanel lootingPanel = new JPanel();
-        lootingPanel.setLayout(new BorderLayout());
-        lootingPanel.setBorder(BorderFactory.createTitledBorder("Loot list"));
-        lootTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-        lootTable.addKeyListener(new KeyAdapter()
-        {
-            public void keyPressed(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_DELETE && lootTable.getSelectedRow() != -1) {
-                    lootModel.removeRow(lootTable.getSelectedRow());
+                String token = npc.getId() + " (" + npc.getName() + ")";
+                if (!loaded.contains(token)) {
+                    loaded.add(token);
                 }
             }
         });
 
-        final JScrollPane lootPane = new JScrollPane(lootTable);
-        lootingPanel.add(lootPane, BorderLayout.CENTER);
+        final Button clearer = new Button("Clear Selection");
+        clearer.setOnAction(action -> selected.clear());
 
-        final JButton adder = new JButton(new ImageIcon(ScriptContext.loadResourceImage("https://i.imgur.com/6ueaY1k.png", 18, 18)));
-        adder.setOpaque(false);
-        adder.setFocusable(false);
-        adder.setToolTipText("Add a row");
-        adder.addActionListener((ActionEvent e) -> {
-            Object[] o = new Object[] {
-                    null, false
-            };
-            ((DefaultTableModel) lootTable.getModel()).addRow(o);
-        });
-        lootingPanel.add(adder, BorderLayout.AFTER_LAST_LINE);
+        final HBox loadedBox = new HBox(25, new Label("Loaded List"));
+        loadedBox.setAlignment(Pos.CENTER);
 
-        /////////////////////////////////////////////////////////////////////////////
+        final HBox selectedBox = new HBox(25, new Label("Selected List"));
+        selectedBox.setAlignment(Pos.CENTER);
 
-        final JPanel miscPanel = new JPanel();
-        miscPanel.setLayout(null);
-        miscPanel.setBorder(BorderFactory.createTitledBorder("Prayer / Consumption"));
+        final HBox loaderBox = new HBox(25, loader);
+        loaderBox.setAlignment(Pos.CENTER);
 
-        final JPanel prayerBox = new JPanel();
-        prayerBox.setLayout(new BoxLayout(prayerBox, BoxLayout.Y_AXIS));
+        final HBox clearerBox = new HBox(25, clearer);
+        clearerBox.setAlignment(Pos.CENTER);
 
-        Arrays.stream(Prayer.Prayers.values()).forEach(entry -> {
-            JCheckBox box = new JCheckBox(entry.getName());
-            prayerMap.put(box, entry);
-            prayerBox.add(box);
-        });
+        general.add(loadedBox, 0, 0);
+        general.add(selectedBox, 2, 0);
+        general.add(loadedIds, 0, 1);
+        general.add(shifter, 1, 1);
+        general.add(selectedIds, 2, 1);
+        general.add(loaderBox, 0, 2);
+        general.add(clearerBox, 2, 2);
 
-        JScrollPane prayerPane = new JScrollPane();
-        prayerPane.setViewportView(prayerBox);
-        prayerPane.setBounds(15, 20, 235, 250);
-
-        miscPanel.add(prayerPane);
-
-        final JLabel food = new JLabel("Food ID");
-        food.setBounds(330, 20, 100, 20);
-        miscPanel.add(food);
-
-        foodId.setBounds(380, 20, 60, 20);
-        foodId.getDocument().addDocumentListener(new DocumentListener() {
-            public void changedUpdate(DocumentEvent e)
-            {
-                update();
-            }
-            public void removeUpdate(DocumentEvent e)
-            {
-                update();
-            }
-            public void insertUpdate(DocumentEvent e)
-            {
-                update();
-            }
-
-            public void update()
-            {
-                final String id = foodId.getText();
-                if (id != null && id.length() > 0 && isNumber(id))
-                {
-                    context.getFighterProfile().setFoodID(Integer.valueOf(foodId.getText()));
-                }
-            }
-        });
-        miscPanel.add(foodId);
-
-        eat.setBounds(330, 100, 125, 20);
-        miscPanel.add(eat);
-
-        eatHP.setMinorTickSpacing(1);
-        eatHP.setMajorTickSpacing(10);
-        eatHP.setBounds(275, 120, 235, 50);
-        eatHP.setPaintTicks(true);
-        eatHP.setPaintLabels(true);
-        eatHP.addChangeListener((ChangeEvent e) -> {
-            context.getFighterProfile().setEatAt(eatHP.getValue());
-            eat.setText("Eating at: " + context.getFighterProfile().getEatAt());
-        });
-        miscPanel.add(eatHP);
-
-        guiPane.add("Fighting", fightingPanel);
-        guiPane.add("Looting", lootingPanel);
-        guiPane.add("Misc", miscPanel);
-
-        this.add(guiPane, BorderLayout.CENTER);
-        this.add(start, BorderLayout.SOUTH);
+        return generalTab;
     }
 
-    private void updateLootList() {
-        context.getFighterProfile().getLootIDs().clear();
-        for (int i = 0; i < lootTable.getRowCount(); i++) {
-            Object value = lootTable.getModel().getValueAt(i, 0);
-            if (value != null) {
-                context.getFighterProfile().getLootIDs().add((int) value);
+    private Tab createConfigTab() {
+        final GridPane config = new GridPane();
+        final Tab configTab   = new Tab("Configuration", config);
+        config.setPadding(new Insets(20, 20, 20, 20));
+        configTab.setClosable(false);
+        return configTab;
+    }
+
+    private Tab createConstraintsTab() {
+        final GridPane constraints = new GridPane();
+        final Tab constraintsTab   = new Tab("Constraints", constraints);
+        final GridPane gridView    = new GridPane();
+        constraints.setPadding(new Insets(20, 20, 20, 20));
+        constraints.setHgap(20);
+        constraints.setVgap(20);
+
+        Tile local = Player.getMyPlayer().getLocation();
+        for (int x = -5, realX = 0; x < 6; x++, realX++) {
+            for (int y = -5, realY = 0; y < 6; y++, realY++) {
+                RSTileBox tile = new RSTileBox(new Tile(local.getX() + x, local.getY() - y));
+                tiles.add(tile);
+                gridView.add(tile, realX, realY);
             }
         }
-    }
 
-    private void updatePrayerList() {
-        context.getFighterProfile().getDesiredPrayers().clear();
-        prayerMap.forEach((box, prayer) -> {
-            if (box.isSelected()) {
-                context.getFighterProfile().getDesiredPrayers().add(prayer);
+
+        Label lootRadius = new Label("Loot radius: 0");
+
+        final Slider slider = new Slider(0, 20, 1);
+        slider.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                lootRadius.textProperty().setValue("Loot radius: " + newValue.intValue());
+                fighter.setRadius(newValue.intValue());
             }
         });
+
+        slider.setPrefWidth(225);
+        slider.setShowTickMarks(true);
+        slider.setShowTickLabels(true);
+        slider.setMajorTickUnit(10);
+        slider.setBlockIncrement(1);
+
+        final HBox safeBox = new HBox(25, new Label("Safe spot(s)"));
+        safeBox.setAlignment(Pos.CENTER);
+
+        final VBox other = new VBox(30, new CheckBox("Wait for loot to appear"), lootRadius, new Label("(Leave at 0 to ignore)"), slider);
+        other.setAlignment(Pos.CENTER);
+
+        constraints.add(safeBox, 0, 0);
+        constraints.add(gridView, 0, 1);
+        constraints.add(other, 1, 1);
+        constraintsTab.setClosable(false);
+
+        return constraintsTab;
     }
 
-    public boolean isCompleted()
-    {
-        return completed;
+    private HBox createStartBox(Stage stage) {
+        final Button start = new Button("Start Script");
+        start.setOnAction(action -> {
+            selected.forEach(token -> {
+                int id = Integer.valueOf(token.replaceAll(" \\(.*\\)", ""));
+                if (!fighter.getIds().contains(id)) {
+                    fighter.getIds().add(id);
+                }
+            });
+            tiles.forEach(tile -> {
+                if (tile.isSelected()) {
+                    fighter.getSafeSpots().add(tile.getRSTile());
+                }
+            });
+            stage.close();
+            isFinished = true;
+        });
+        final Label label = new Label("Version " + fighter.getClass().getAnnotation(Manifest.class).version());
+        final HBox box = new HBox(25, label, start);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(10, 5, 10, 0));
+        box.setBackground(new Background(new BackgroundFill(Color.rgb(18, 18, 18), CornerRadii.EMPTY, Insets.EMPTY)));
+        return box;
     }
 
-    private boolean isNumber(String str) {
+    private Image loadResourceImage(String path) {
         try {
-            Integer.parseInt(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
+            return new Image(path, 20, 20, false, false, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Source: " + path + "\nCaused by: " + e.getCause().toString(), "Error loading image", JOptionPane.ERROR_MESSAGE);
         }
+        return null;
+    }
+
+    public boolean isFinished() {
+        return isFinished;
+    }
+
+    public ArrayList<RSTileBox> getTiles() {
+        return tiles;
     }
 }
