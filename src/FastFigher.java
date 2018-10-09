@@ -62,6 +62,7 @@ public class FastFigher extends ActiveScript implements PaintListener {
         gui = new GUI(this);
         scriptTimer = new Timer();
 
+        //test
         return true;
     }
 
