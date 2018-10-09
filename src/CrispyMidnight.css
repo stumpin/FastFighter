@@ -1,0 +1,56 @@
+.root {
+    -fx-base: rgb(24, 24, 24);
+    -fx-background: rgb(28, 28, 28);
+    -fx-control-inner-background: rgb(32, 32, 32);
+}
+
+.label {
+    -fx-text-fill: white;
+    -fx-font-family: "KG HAPPY";
+    -fx-font-size: 10pt;
+}
+
+.menu-bar {
+    -fx-background-color: rgb(18, 18, 18);
+}
+
+.button {
+    -fx-text-fill: white;
+    -fx-font-family: "KG HAPPY";
+    -fx-font-size: 12pt;
+    -fx-background-color: #285AA3;
+    -fx-effect: dropshadow(gaussian, black, 5, 0.0, 0, 1);
+    -fx-background-radius: 30;
+}
+
+.button:hover {
+    -fx-background-color: #152D50;
+}
+
+.button:pressed:hover {
+    -fx-scale-y: 0.9;
+    -fx-scale-x: 0.9;
+}
+
+.tab:selected .focus-indicator {
+    -fx-border-radius: 10 10 0 0, 10 10 0 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-radius: 10 10 0 0, 9 9 0 0, 8 8 0 0;
+}
+
+.tab-pane:focused > .tab-header-area > .headers-region > .focus-indicator {
+    -fx-border-radius: 9 9 0 0, 8 8 0 0;
+}
+
+.tab:selected .tab-label {
+    -fx-text-fill: white;
+    -fx-font-family: "KG HAPPY";
+    -fx-font-size: 12pt;
+    -fx-alignment: CENTER;
+    -fx-border-radius: 9 9 0 0, 8 8 0 0;
+}
+
+
+
