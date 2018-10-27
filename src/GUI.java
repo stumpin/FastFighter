@@ -2,6 +2,8 @@ import com.sun.javafx.application.PlatformImpl;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -10,6 +12,7 @@ import javafx.geometry.*;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
@@ -18,8 +21,10 @@ import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import javafx.util.Callback;
 import xobot.script.Manifest;
 import xobot.script.methods.NPCs;
+import xobot.script.methods.tabs.Prayer;
 import xobot.script.wrappers.Tile;
 import xobot.script.wrappers.interactive.NPC;
 import xobot.script.wrappers.interactive.Player;
@@ -42,6 +47,8 @@ public class GUI extends Application {
     private boolean isFinished = false;
     private final ArrayList<RSTileBox> tiles = new ArrayList<>();
     private final ObservableList<String> loaded = FXCollections.observableArrayList(), selected = FXCollections.observableArrayList();
+    private final ObservableList<Prayer.Prayers> prayers = FXCollections.observableArrayList();
+
 
     public GUI(FastFigher script) {
         this.fighter = script;
@@ -51,6 +58,7 @@ public class GUI extends Application {
             System.setProperty("glass.win.renderScale", "100%");
             return null;
         });
+
         PlatformImpl.startup(() -> { });
         Platform.runLater(() -> {
             start(new Stage());
@@ -126,6 +134,7 @@ public class GUI extends Application {
                 int index = selectedIds.getSelectionModel().getSelectedIndex();
                 if (index > -1) {
                     selected.remove(index);
+
                 }
             }
         });
@@ -183,8 +192,51 @@ public class GUI extends Application {
     private Tab createConfigTab() {
         final GridPane config = new GridPane();
         final Tab configTab   = new Tab("Configuration", config);
+        config.setHgap(20);
+        config.setVgap(20);
         config.setPadding(new Insets(20, 20, 20, 20));
         configTab.setClosable(false);
+
+        final ListView prayerList = new ListView(prayers);
+        prayerList.setPrefSize(200, 200);
+        prayerList.setEditable(false);
+        for (Prayer.Prayers prayer : Prayer.Prayers.values()) {
+            prayers.add(prayer);
+        }
+
+        prayerList.setCellFactory(CheckBoxListCell.forListView(new Callback<Prayer.Prayers, ObservableValue<Boolean>>() {
+            @Override
+            public ObservableValue<Boolean> call(Prayer.Prayers item) {
+                BooleanProperty observable = new SimpleBooleanProperty();
+
+                for (Prayer.Prayers prayer : fighter.profile.getPrayers()) {
+                    if (item.equals(prayer)) {
+                        observable.set(true);
+                    }
+                }
+
+                observable.addListener((o, previous, current) -> {
+                    if (current) {
+                        fighter.profile.getPrayers().add(item);
+                    } else if (previous) {
+                        fighter.profile.getPrayers().remove(item);
+                    }
+                });
+
+                return observable;
+            }
+        }));
+
+        final CheckBox checkBox = new CheckBox("Use potions");
+        checkBox.setAlignment(Pos.CENTER_RIGHT);
+
+        final HBox pray = new HBox(25, new Label("Selected Prayer(s)"));
+        pray.setAlignment(Pos.CENTER);
+
+        config.add(pray, 0, 0);
+        config.add(prayerList, 0, 1);
+        config.add(checkBox, 1, 0);
+
         return configTab;
     }
 
@@ -205,11 +257,14 @@ public class GUI extends Application {
             }
         }
 
-
-        Label lootRadius = new Label("Loot radius: 0");
-
-        final Slider slider = new Slider(0, 20, 1);
-        slider.valueProperty().addListener(new ChangeListener<Number>() {
+        final Label lootRadius = new Label("Loot radius: 0");
+        final Slider lootSlider = new Slider(0, 20, 1);
+        lootSlider.setPrefWidth(225);
+        lootSlider.setShowTickMarks(true);
+        lootSlider.setShowTickLabels(true);
+        lootSlider.setMajorTickUnit(10);
+        lootSlider.setBlockIncrement(1);
+        lootSlider.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 lootRadius.textProperty().setValue("Loot radius: " + newValue.intValue());
@@ -217,16 +272,27 @@ public class GUI extends Application {
             }
         });
 
-        slider.setPrefWidth(225);
-        slider.setShowTickMarks(true);
-        slider.setShowTickLabels(true);
-        slider.setMajorTickUnit(10);
-        slider.setBlockIncrement(1);
+
+        final Label fightDelay = new Label("Fight delay: 0 ms");
+        final Slider delaySlider = new Slider(0, 5000, 0);
+        delaySlider.setPrefWidth(225);
+        delaySlider.setShowTickMarks(true);
+        delaySlider.setShowTickLabels(true);
+        delaySlider.setMajorTickUnit(1000);
+        delaySlider.setBlockIncrement(25);
+        delaySlider.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                fightDelay.textProperty().setValue("Fight delay: " + newValue.intValue() + " ms");
+                fighter.setDelay(newValue.intValue());
+            }
+        });
 
         final HBox safeBox = new HBox(25, new Label("Safe spot(s)"));
         safeBox.setAlignment(Pos.CENTER);
 
-        final VBox other = new VBox(30, new CheckBox("Wait for loot to appear"), lootRadius, new Label("(Leave at 0 to ignore)"), slider);
+        //final VBox other = new VBox(30, new CheckBox("Wait for loot to appear"), lootRadius, new Label("(Leave at 0 to ignore)"), slider);
+        final VBox other = new VBox(25, lootRadius, new Label("(Leave at 0 to ignore)"), lootSlider, fightDelay, delaySlider);
         other.setAlignment(Pos.CENTER);
 
         constraints.add(safeBox, 0, 0);

@@ -1,3 +1,4 @@
+import xobot.script.methods.tabs.Prayer;
 import xobot.script.wrappers.Tile;
 
 import java.io.*;
@@ -11,8 +12,11 @@ import java.util.ArrayList;
 public class FighterProfile implements Serializable {
 
     private boolean boosters = true;
+    private int delay = 0, radius = 0;
+
     private final ArrayList<Tile> safeSpots = new ArrayList<>();
     private final ArrayList<Integer> ids = new ArrayList<>();
+    private final ArrayList<Prayer.Prayers> prayers = new ArrayList<>();
     private final RSLootItem[] items = {
             new RSLootItem(283, true)
     };
@@ -21,7 +25,6 @@ public class FighterProfile implements Serializable {
     public FighterProfile() {
 
     }
-
 
     public static void dumpProfile(FighterProfile profile, String profileName, String name) {
         try {
@@ -47,5 +50,30 @@ public class FighterProfile implements Serializable {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public ArrayList<Integer> getIds() {
+        return ids;
+    }
+
+    public ArrayList<Tile> getSafeSpots() {
+        return safeSpots;
+    }
+
+    public ArrayList<Prayer.Prayers> getPrayera() {
+        return prayers;
+    }
+
+    public void setRadius(int lootRadius) {
+        radius = lootRadius;
+    }
+
+    public void setDelay(int time) {
+        delay = time;
+    }
+
+
+    public ArrayList<Prayer.Prayers> getPrayers() {
+        return prayers;
     }
 }
