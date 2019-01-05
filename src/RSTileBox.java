@@ -15,6 +15,7 @@ public class RSTileBox extends HBox {
 
     private final Tile tile;
     private boolean selected = false;
+    private final Color blue = Color.rgb(40, 90, 163);
 
     public RSTileBox(Tile tile) {
         this.tile = tile;
@@ -22,7 +23,7 @@ public class RSTileBox extends HBox {
         setBackground(new Background(new BackgroundFill(Color.DIMGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
         setOnMouseEntered(event -> {
             if (!selected) {
-                setBackground(new Background(new BackgroundFill(Color.rgb(40, 90, 163), CornerRadii.EMPTY, Insets.EMPTY)));
+                setBackground(new Background(new BackgroundFill(blue, CornerRadii.EMPTY, Insets.EMPTY)));
             }
         });
         setOnMouseExited(event -> {

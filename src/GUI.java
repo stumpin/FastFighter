@@ -3,25 +3,33 @@ import com.sun.javafx.application.PlatformImpl;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.*;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxListCell;
+
+import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
 import javafx.util.Callback;
+
+import javafx.util.StringConverter;
 import xobot.script.Manifest;
 import xobot.script.methods.NPCs;
 import xobot.script.methods.tabs.Prayer;
@@ -29,12 +37,13 @@ import xobot.script.wrappers.Tile;
 import xobot.script.wrappers.interactive.NPC;
 import xobot.script.wrappers.interactive.Player;
 
-import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Optional;
+
 
 /**
  * Created by HP xw8400
@@ -43,14 +52,22 @@ import java.util.ArrayList;
  */
 public class GUI extends Application {
 
-    private FastFigher fighter;
+    private FastFighter fighter;
     private boolean isFinished = false;
+
     private final ArrayList<RSTileBox> tiles = new ArrayList<>();
-    private final ObservableList<String> loaded = FXCollections.observableArrayList(), selected = FXCollections.observableArrayList();
+    private final ObservableList<String> loaded = FXCollections.observableArrayList();
+    private final ObservableList<Integer> selected = FXCollections.observableArrayList();
     private final ObservableList<Prayer.Prayers> prayers = FXCollections.observableArrayList();
 
+    private ListView prayerList;
+    private TableView<RSLootItem> loots;
 
-    public GUI(FastFigher script) {
+    private Label lootRadius, fightDelay, eatAt;
+    private Slider lootSlider, delaySlider, eatSlider;
+    private CheckBox potions, renewals;
+
+    public GUI(FastFighter script) {
         this.fighter = script;
         //internally set up javaFX
         AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
@@ -68,7 +85,7 @@ public class GUI extends Application {
 
     @Override
     public void start(Stage stage) {
-        final TabPane tabPane = new TabPane(createGeneralTab(), createConfigTab(), createConstraintsTab());
+        final TabPane tabPane = new TabPane(createSelectionTab(), createConfigTab(), createConstraintsTab());
         final BorderPane master = new BorderPane(tabPane);
         final Scene scene = new Scene(master, 500, 450);
 
@@ -78,7 +95,7 @@ public class GUI extends Application {
         try {
             scene.getStylesheets().add(new URL("https://pastebin.com/raw/CvjAGgUy").toString());
         } catch (Exception e) {
-            System.out.println("Could not load GUI style sheet - using default styling");
+            System.out.println("Could not load style sheet - using default styling");
             e.printStackTrace();
         }
         stage.setResizable(false);
@@ -93,35 +110,81 @@ public class GUI extends Application {
         load.setOnAction(action -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Select Fighter profile");
-            fileChooser.setInitialDirectory(new File(fighter.getXobotPath() + "FastFighterProfiles"));
+            fileChooser.setInitialDirectory(new File(FighterProfile.getXobotPath() + "FastFighterProfiles"));
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Serialized profiles", "*.serialized"));
             File selectedFile = fileChooser.showOpenDialog(new Stage());
             if (selectedFile != null) {
-                //handle profile setting loading
+                fighter.profile = FighterProfile.loadProfile(selectedFile);
+
+                if (fighter.profile != null) {
+                    fighter.profile.ids.forEach(integer -> {
+                        if (!selected.contains(integer)) {
+                            selected.add(integer);
+                        }
+                    });
+
+                    prayerList.refresh();
+
+                    lootSlider.setValue(fighter.profile.radius);
+                    lootRadius.textProperty().setValue("Loot radius: " + lootSlider.valueProperty().intValue());
+
+                    delaySlider.setValue(fighter.profile.delay);
+                    fightDelay.textProperty().setValue("Fight delay: " + delaySlider.valueProperty().intValue() + " ms");
+
+                    eatSlider.setValue(fighter.profile.eat);
+                    eatAt.textProperty().setValue("Eating at: " + eatSlider.valueProperty().intValue() + " hp");
+
+                    potions.setSelected(fighter.profile.potions);
+                    renewals.setSelected(fighter.profile.renewals);
+
+                    loots.getItems().clear();
+                    loots.getItems().addAll(fighter.profile.lootItems);
+                    loots.refresh();
+                }
             }
         });
 
         final MenuItem save = new MenuItem("Save");
-        final Menu menu     = new Menu("File", null, load, save);
+        save.setOnAction(action -> {
+            TextInputDialog steamIdDialog = new TextInputDialog();
+            steamIdDialog.setTitle("Profile Saver");
+            steamIdDialog.setHeaderText(null);
+            steamIdDialog.setContentText("Enter profile name:");
+
+            final Optional<String> name = steamIdDialog.showAndWait();
+            if (name.isPresent() && name.get().length() > 0) {
+                updateSafeSpots();
+                fighter.profile.lootItems.clear();
+                loots.getItems().forEach(item -> {
+                    if (item.getId() > 0) {
+                        fighter.profile.lootItems.add(item);
+                    }
+                });
+                FighterProfile.dumpProfile(fighter.profile, name.get());
+            }
+        });
+        final Menu menu = new Menu("Presets", null, load, save);
         return new MenuBar(menu);
     }
 
-    private Tab createGeneralTab() {
-        final GridPane general = new GridPane();
-        final Tab generalTab   = new Tab("General", general);
-        general.setPadding(new Insets(20, 20, 20, 20));
-        general.setHgap(20);
-        general.setVgap(20);
-        generalTab.setClosable(false);
+    private Tab createSelectionTab() {
+        final GridPane selection = new GridPane();
+        final Tab selectionTab = new Tab("Selection", selection);
+        selection.setPadding(new Insets(20, 20, 20, 20));
+        selection.setHgap(20);
+        selection.setVgap(20);
+        selectionTab.setClosable(false);
 
         final ListView loadedIds = new ListView(loaded);
         loadedIds.setPrefSize(200, 200);
         loadedIds.setEditable(false);
         loadedIds.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                String token = (String) loadedIds.getSelectionModel().getSelectedItem();
-                if (!selected.contains(token)) {
-                    selected.add(token);
+                final String token = (String) loadedIds.getSelectionModel().getSelectedItem();
+                final int stripped = Integer.valueOf(token.replaceAll(" \\(.*\\)", ""));
+                if (!selected.contains(stripped)) {
+                    selected.add(stripped);
+                    fighter.profile.ids.add(stripped);
                 }
             }
         });
@@ -134,7 +197,7 @@ public class GUI extends Application {
                 int index = selectedIds.getSelectionModel().getSelectedIndex();
                 if (index > -1) {
                     selected.remove(index);
-
+                    fighter.profile.ids.remove(index);
                 }
             }
         });
@@ -143,11 +206,18 @@ public class GUI extends Application {
         final Image image = loadResourceImage("https://i.imgur.com/DCDCRm8.png");
         if (image != null) {
             shifter.setGraphic(new ImageView(image));
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Error loading https://i.imgur.com/DCDCRm8.png");
+            alert.showAndWait().filter(response -> response == ButtonType.OK);
         }
+
         shifter.setOnAction(action -> {
             loaded.forEach(id -> {
-                if (!selected.contains(id)) {
-                    selected.add(id);
+                int stripped = Integer.valueOf(id.replaceAll(" \\(.*\\)", ""));
+                if (!selected.contains(stripped)) {
+                    selected.add(stripped);
+                    fighter.profile.ids.add(stripped);
                 }
             });
         });
@@ -164,7 +234,10 @@ public class GUI extends Application {
         });
 
         final Button clearer = new Button("Clear Selection");
-        clearer.setOnAction(action -> selected.clear());
+        clearer.setOnAction(action -> {
+            selected.clear();
+            fighter.profile.ids.clear();
+        });
 
         final HBox loadedBox = new HBox(25, new Label("Loaded List"));
         loadedBox.setAlignment(Pos.CENTER);
@@ -178,28 +251,28 @@ public class GUI extends Application {
         final HBox clearerBox = new HBox(25, clearer);
         clearerBox.setAlignment(Pos.CENTER);
 
-        general.add(loadedBox, 0, 0);
-        general.add(selectedBox, 2, 0);
-        general.add(loadedIds, 0, 1);
-        general.add(shifter, 1, 1);
-        general.add(selectedIds, 2, 1);
-        general.add(loaderBox, 0, 2);
-        general.add(clearerBox, 2, 2);
+        selection.add(loadedBox, 0, 0);
+        selection.add(selectedBox, 2, 0);
+        selection.add(loadedIds, 0, 1);
+        selection.add(shifter, 1, 1);
+        selection.add(selectedIds, 2, 1);
+        selection.add(loaderBox, 0, 2);
+        selection.add(clearerBox, 2, 2);
 
-        return generalTab;
+        return selectionTab;
     }
 
     private Tab createConfigTab() {
         final GridPane config = new GridPane();
-        final Tab configTab   = new Tab("Configuration", config);
+        final Tab configTab = new Tab("Configuration", config);
         config.setHgap(20);
         config.setVgap(20);
-        config.setPadding(new Insets(20, 20, 20, 20));
+        config.setPadding(new Insets(10, 10, 10, 10));
         configTab.setClosable(false);
 
-        final ListView prayerList = new ListView(prayers);
-        prayerList.setPrefSize(200, 200);
+        prayerList = new ListView(prayers);
         prayerList.setEditable(false);
+
         for (Prayer.Prayers prayer : Prayer.Prayers.values()) {
             prayers.add(prayer);
         }
@@ -209,7 +282,7 @@ public class GUI extends Application {
             public ObservableValue<Boolean> call(Prayer.Prayers item) {
                 BooleanProperty observable = new SimpleBooleanProperty();
 
-                for (Prayer.Prayers prayer : fighter.profile.getPrayers()) {
+                for (Prayer.Prayers prayer : fighter.profile.prayers) {
                     if (item.equals(prayer)) {
                         observable.set(true);
                     }
@@ -217,9 +290,9 @@ public class GUI extends Application {
 
                 observable.addListener((o, previous, current) -> {
                     if (current) {
-                        fighter.profile.getPrayers().add(item);
+                        fighter.profile.prayers.add(item);
                     } else if (previous) {
-                        fighter.profile.getPrayers().remove(item);
+                        fighter.profile.prayers.remove(item);
                     }
                 });
 
@@ -227,38 +300,102 @@ public class GUI extends Application {
             }
         }));
 
-        final CheckBox checkBox = new CheckBox("Use potions");
-        checkBox.setAlignment(Pos.CENTER_RIGHT);
+        potions = new CheckBox("Use boosters");
+        potions.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                fighter.profile.potions = newValue;
+            }
+        });
 
-        final HBox pray = new HBox(25, new Label("Selected Prayer(s)"));
-        pray.setAlignment(Pos.CENTER);
+        renewals = new CheckBox("Use renewals");
+        renewals.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                fighter.profile.renewals = newValue;
+            }
+        });
+        loots = new TableView<>();
+        loots.getSelectionModel().setCellSelectionEnabled(true);
+        loots.setEditable(true);
+        loots.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        loots.addEventFilter(KeyEvent.KEY_RELEASED, new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                final TablePosition pos = loots.getFocusModel().getFocusedCell();
+                if (event.getCode() == KeyCode.ENTER) {
+                    if (pos.getRow() == loots.getItems().size() - 1) {
+                        loots.getSelectionModel().clearSelection();
+                        final RSLootItem data = new RSLootItem(0, false);
+                        loots.getItems().add(data);
+                    }
+                } else if (event.getCode() == KeyCode.DELETE && loots.getItems().size() > 1) {
+                    final RSLootItem selected = loots.getSelectionModel().getSelectedItem();
+                    loots.getItems().remove(selected);
+                }
+            }
+        });
 
-        config.add(pray, 0, 0);
-        config.add(prayerList, 0, 1);
-        config.add(checkBox, 1, 0);
+        final TableColumn<RSLootItem, Number> id = new TableColumn<>("Id");
+        id.setCellValueFactory(cellData -> cellData.getValue().valueProperty());
+        id.setCellFactory(createNumberCellFactory());
+        id.setEditable(true);
+
+        final TableColumn<RSLootItem, Boolean> stackable = new TableColumn<>("Stackable");
+        stackable.setCellValueFactory(cellData -> cellData.getValue().stackableProperty());
+        stackable.setCellFactory(param -> new CheckBoxTableCell<>());
+        stackable.setEditable(true);
+        loots.getColumns().addAll(id, stackable);
+
+        final ObservableList<RSLootItem> items = FXCollections.observableArrayList(new RSLootItem(0, true));
+        loots.setItems(items);
+
+        eatAt = new Label("Eating at: 50 hp");
+        eatSlider = new Slider(1, 98, 50);
+        eatSlider.setPrefWidth(225);
+        eatSlider.setShowTickMarks(true);
+        eatSlider.setShowTickLabels(true);
+        eatSlider.setMajorTickUnit(20);
+        eatSlider.setBlockIncrement(1);
+        eatSlider.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                eatAt.textProperty().setValue("Eating at: " + newValue.intValue() + " hp");
+                fighter.profile.eat = newValue.intValue();
+            }
+        });
+
+        final VBox left = new VBox(15, new Label("Selected Prayer(s)"), prayerList, new HBox(10, potions, renewals));
+        left.setAlignment(Pos.CENTER);
+
+        final VBox right = new VBox(15, new Label("Loot table"), loots, eatAt, eatSlider);
+        right.setAlignment(Pos.CENTER);
+
+        config.add(left, 0, 0);
+        config.add(right, 1, 0);
 
         return configTab;
     }
 
     private Tab createConstraintsTab() {
         final GridPane constraints = new GridPane();
-        final Tab constraintsTab   = new Tab("Constraints", constraints);
-        final GridPane gridView    = new GridPane();
+        final Tab constraintsTab = new Tab("Constraints", constraints);
+        final GridPane gridView = new GridPane();
+
         constraints.setPadding(new Insets(20, 20, 20, 20));
         constraints.setHgap(20);
         constraints.setVgap(20);
 
-        Tile local = Player.getMyPlayer().getLocation();
+        final Tile local = Player.getMyPlayer().getLocation();
         for (int x = -5, realX = 0; x < 6; x++, realX++) {
             for (int y = -5, realY = 0; y < 6; y++, realY++) {
-                RSTileBox tile = new RSTileBox(new Tile(local.getX() + x, local.getY() - y));
+                final RSTileBox tile = new RSTileBox(new Tile(local.getX() + x, local.getY() - y));
                 tiles.add(tile);
                 gridView.add(tile, realX, realY);
             }
         }
-
-        final Label lootRadius = new Label("Loot radius: 0");
-        final Slider lootSlider = new Slider(0, 20, 1);
+        lootRadius = new Label("Loot radius: 0");
+        lootSlider = new Slider(0, 20, 1);
         lootSlider.setPrefWidth(225);
         lootSlider.setShowTickMarks(true);
         lootSlider.setShowTickLabels(true);
@@ -268,13 +405,12 @@ public class GUI extends Application {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 lootRadius.textProperty().setValue("Loot radius: " + newValue.intValue());
-                fighter.setRadius(newValue.intValue());
+                fighter.profile.radius = newValue.intValue();
             }
         });
 
-
-        final Label fightDelay = new Label("Fight delay: 0 ms");
-        final Slider delaySlider = new Slider(0, 5000, 0);
+        fightDelay = new Label("Fight delay: 0 ms");
+        delaySlider = new Slider(0, 5000, 0);
         delaySlider.setPrefWidth(225);
         delaySlider.setShowTickMarks(true);
         delaySlider.setShowTickLabels(true);
@@ -284,14 +420,13 @@ public class GUI extends Application {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 fightDelay.textProperty().setValue("Fight delay: " + newValue.intValue() + " ms");
-                fighter.setDelay(newValue.intValue());
+                fighter.profile.delay = newValue.intValue();
             }
         });
 
         final HBox safeBox = new HBox(25, new Label("Safe spot(s)"));
         safeBox.setAlignment(Pos.CENTER);
 
-        //final VBox other = new VBox(30, new CheckBox("Wait for loot to appear"), lootRadius, new Label("(Leave at 0 to ignore)"), slider);
         final VBox other = new VBox(25, lootRadius, new Label("(Leave at 0 to ignore)"), lootSlider, fightDelay, delaySlider);
         other.setAlignment(Pos.CENTER);
 
@@ -306,17 +441,7 @@ public class GUI extends Application {
     private HBox createStartBox(Stage stage) {
         final Button start = new Button("Start Script");
         start.setOnAction(action -> {
-            selected.forEach(token -> {
-                int id = Integer.valueOf(token.replaceAll(" \\(.*\\)", ""));
-                if (!fighter.getIds().contains(id)) {
-                    fighter.getIds().add(id);
-                }
-            });
-            tiles.forEach(tile -> {
-                if (tile.isSelected()) {
-                    fighter.getSafeSpots().add(tile.getRSTile());
-                }
-            });
+            updateSafeSpots();
             stage.close();
             isFinished = true;
         });
@@ -333,9 +458,30 @@ public class GUI extends Application {
             return new Image(path, 20, 20, false, false, false);
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Source: " + path + "\nCaused by: " + e.getCause().toString(), "Error loading image", JOptionPane.ERROR_MESSAGE);
         }
         return null;
+    }
+
+    private Callback<TableColumn<RSLootItem, Number>, TableCell<RSLootItem, Number>>  createNumberCellFactory() {
+        return TextFieldTableCell.forTableColumn(new StringConverter<Number>() {
+
+            @Override
+            public Number fromString(String string) {
+                return Integer.parseInt(string);
+            }
+            @Override
+            public String toString(Number object) {
+                return object.toString();
+            }
+        });
+    }
+
+    public void updateSafeSpots() {
+        tiles.forEach(tile -> {
+            if (tile.isSelected()) {
+                fighter.profile.safeSpots.add(tile.getRSTile());
+            }
+        });
     }
 
     public boolean isFinished() {

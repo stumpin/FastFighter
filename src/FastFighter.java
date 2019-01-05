@@ -14,7 +14,6 @@ import xobot.script.wrappers.interactive.*;
 
 import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -24,46 +23,32 @@ import java.util.Comparator;
  * Date: 10/3/2018.
  */
 
-@Manifest(authors = { "Kumalo" }, name = "Fast Fighter", description = "Fights anything, loots anything", version = 1.4)
+@Manifest(authors = { "Jake" }, name = "Fast Fighter", description = "Fights anything, loots anything", version = 1.4)
 
-public class FastFigher extends ActiveScript implements PaintListener {
+public class FastFighter extends ActiveScript implements PaintListener {
 
     private GUI gui;
-    protected FighterProfile profile;
-
-    private final ArrayList<Tile> safeSpots = new ArrayList<>();
-    private final ArrayList<Integer> ids = new ArrayList<>();
-
     private NPC target = null;
-    private Timer scriptTimer;
-
+    protected FighterProfile profile;
+    private Timer scriptTimer, renewalTimer;
     private final Color black = new Color(0, 0, 0, 127);
     private final Color blue  = new Color(40, 90, 163);
-    private Color highlight   = Color.BLACK;
-
-    private int eat = 75, radius = 0, delay = 0;
-
+    private Color highlight = Color.BLACK;
+    private final double version = this.getClass().getAnnotation(Manifest.class).version();
     private String status = "Setting up";
-
-    private final RSLootItem[] items = {
-
-            new RSLootItem(995, true)
-    };
-
-    private boolean boosters = true;
-    private double version = this.getClass().getAnnotation(Manifest.class).version();
 
     @Override
     public boolean onStart() {
-        final File profiles = new File(getXobotPath() + "FastFighterProfiles");
+        final File profiles = new File(FighterProfile.getXobotPath() + "FastFighterProfiles");
 
         if (!profiles.exists() && profiles.mkdir()) {
             System.out.println("Created profile folder");
         }
 
+        profile = new FighterProfile();
         gui = new GUI(this);
         scriptTimer = new Timer();
-        profile = new FighterProfile();
+        renewalTimer = new Timer(1);
 
         return true;
     }
@@ -71,34 +56,61 @@ public class FastFigher extends ActiveScript implements PaintListener {
     @Override
     public int loop() {
         if (gui.isFinished() && Game.isLoggedIn()) {
-            if (Skills.CONSTITUTION.getCurrentLevel() < eat) {
-                Item food = Arrays.stream(Inventory.getItems()).filter(item -> item.hasAction("eat")).findAny().orElse(null);
+            if (Skills.CONSTITUTION.getCurrentLevel() < profile.eat) {
+                final Item food = Arrays.stream(Inventory.getItems()).filter(item -> item.hasAction("eat")).findAny().orElse(null);
                 if (food != null) {
                     status = "eating food";
+                    final Character interactor = Players.getMyPlayer().getInteractingCharacter();
                     food.interact("eat");
                     Time.sleep(1000);
+                    if (interactor != null) {
+                        interactor.interact("attack");
+                        Time.sleep(() -> Players.getMyPlayer().getInteractingIndex() != -1, 3000);
+                    }
                 } else {
-                    return terminate("Hp is lower than " + eat + ", and no food found");
+                    return terminate("Hp is lower than " + profile.eat + ", and no food found");
                 }
-            } else if (Skills.PRAYER.getCurrentLevel() < 10) {
-                Item potion = Inventory.getItem(3024, 3026, 3028, 3030, 2434, 139, 141, 143);
+            } else if (profile.renewals && !renewalTimer.isRunning()) {
+                final Item potion = Inventory.getItem(21636, 21634, 21632, 21630);
+                if (potion != null) {
+                    status = "drinking renewal";
+                    final Character interactor = Players.getMyPlayer().getInteractingCharacter();
+                    potion.interact("drink");
+                    renewalTimer.setEndIn(300000);
+                    Time.sleep(1000);
+                    if (interactor != null) {
+                        interactor.interact("attack");
+                        Time.sleep(() -> Players.getMyPlayer().getInteractingIndex() != -1, 3000);
+                    }
+                }
+            } else if (Prayer.getPointPercentage() < 15) {
+                final Item potion = Inventory.getItem(3024, 3026, 3028, 3030, 2434, 139, 141, 143);
                 if (potion != null) {
                     status = "restoring prayer";
+                    final Character interactor = Players.getMyPlayer().getInteractingCharacter();
                     potion.interact("drink");
                     Time.sleep(1000);
+                    if (interactor != null) {
+                        interactor.interact("attack");
+                        Time.sleep(() -> Players.getMyPlayer().getInteractingIndex() != -1, 3000);
+                    }
                 } else {
-                    return terminate("Prayer is lower than 10, and no prayer/restore pots found");
+                    return terminate("Prayer is lower than 15%, and no prayer/restore pots found");
                 }
-            } else if (!safeSpots.isEmpty() && !safeSpots.contains(Players.getMyPlayer().getLocation())) {
-                safeSpots.sort(Comparator.comparingInt(Tile::getDistance));
-                Tile safe = safeSpots.get(0);
+            } else if (!profile.safeSpots.isEmpty() && !containsTile(Players.getMyPlayer().getLocation(), profile.safeSpots)) {//!safeSpots.contains(Players.getMyPlayer().getLocation())) {
+                profile.safeSpots.sort(Comparator.comparingInt(Tile::getDistance));
+                final Tile safe = profile.safeSpots.get(0);
+                final Character interactor = Players.getMyPlayer().getInteractingCharacter();
                 safe.walk();
-                Time.sleep(() -> Players.getMyPlayer().getLocation().equals(safe), 8000);
+                if (Time.sleep(() -> Players.getMyPlayer().getLocation().equals(safe), 8000) && interactor != null) {
+                    interactor.interact("attack");
+                    Time.sleep(() -> Players.getMyPlayer().getInteractingIndex() != -1, 3000);
+                }
             } else {
                 final Character interacting = Players.getMyPlayer().getInteractingCharacter();
 
-                if (interacting == null || (interacting.isDead() && Time.sleep(delay))) {
-                    if (boosters) {
+                if (interacting == null || (interacting.isDead() && Time.sleep(profile.delay))) {
+                    if (profile.potions) {
                         if (Skills.ATTACK.getCurrentLevel() < Math.ceil(Skills.ATTACK.getRealLevel() * 1.07)) {
                             Item potion = Inventory.getItem(9739, 9741, 9743, 9745, 2436, 145, 147, 149);
                             if (potion != null) {
@@ -136,29 +148,27 @@ public class FastFigher extends ActiveScript implements PaintListener {
                         }
                     }
                     for (GroundItem groundItem : GroundItems.getAll()) {
-                        for (RSLootItem loot : items) {
-                            if (groundItem.getItem().getID() == loot.getId() && groundItem.isReachable() && (radius == 0 || groundItem.getDistance() <= radius)) {
+                        for (RSLootItem loot : profile.lootItems) {
+                            if (groundItem.getItem().getID() == loot.getId() && groundItem.isReachable() && (profile.radius == 0 || groundItem.getDistance() <= profile.radius)) {
                                 boolean room = false;
                                 if (!Inventory.isFull() || (loot.isStackable() && Inventory.Contains(loot.getId()))) {
                                     room = true;
                                 } else {
-                                    Item item = Arrays.stream(Inventory.getItems()).filter(vial -> vial.getID() == 229).findAny().orElse(null);
+                                    Item item = Arrays.stream(Inventory.getItems()).filter(drop -> drop.getID() == 229 || drop.getDefinition().getName().matches(".*?\\(([1-4])\\)$")).findAny().orElse(null);
                                     //Item item = Arrays.stream(Inventory.getItems()).filter(vial -> vial.getID() == 229).findAny().orElse(Inventory.getItem(item -> item.getDefinition().getName().matches(".*?\\(([1-4])\\)$")));
                                     if (item != null) {
                                         status = "Making room";
-                                        if (item.hasAction("Eat")) {
-                                            item.interact("eat");
-                                        } else {
-                                            item.interact("drop");
+                                        item.interact("drop");
+                                        if (Time.sleep(() -> !Inventory.isFull(), 1000)) {
+                                            room = true;
                                         }
-                                        if (Time.sleep(() -> !Inventory.isFull(), 1000)) room = true;
                                     }
                                 }
                                 if (room) {
                                     int count = Inventory.getRealCount();
                                     status = "looting";
                                     groundItem.getItem().interact("take");
-                                    Time.sleep(() -> Inventory.getRealCount() > count, 5000);
+                                    Time.sleep(() -> Inventory.getRealCount() > count, 7000);
                                 } else {
                                     System.out.println("Could not make room to loot " + groundItem.getItem().getDefinition().getName());
                                 }
@@ -166,7 +176,7 @@ public class FastFigher extends ActiveScript implements PaintListener {
                         }
                     }
 
-                    final NPC target = NPCs.getNearest(npc -> ids.contains(npc.getId()) && npc.isReachable() && !npc.isDead() && (!npc.isInCombat() || npc.getInteractingIndex() - 32768 == Context.client.getInteractingIndex()));
+                    final NPC target = NPCs.getNearest(npc -> profile.ids.contains(npc.getId()) && npc.isReachable() && !npc.isDead() && (!npc.isInCombat() || npc.getInteractingIndex() - 32768 == Context.client.getInteractingIndex()));
                     if (target != null) {
                         highlight = Color.ORANGE;
                         this.target = target;
@@ -188,14 +198,14 @@ public class FastFigher extends ActiveScript implements PaintListener {
                             }
                             Time.sleep(75);
                         }
-                        status = "Failed to interact";
+                        status = "Timed out";
                         highlight = Color.RED;
                     }
                 } else {
                     status = "Sleeping";
                 }
             }
-            profile.getPrayers().forEach(prayer -> {
+            profile.prayers.forEach(prayer -> {
                 if (!prayer.isActivated()) {
                     status = "Activating " + prayer.getName();
                     prayer.Activate();
@@ -205,6 +215,15 @@ public class FastFigher extends ActiveScript implements PaintListener {
         }
 
         return 100;
+    }
+
+    private boolean containsTile(Tile search, java.util.List<Tile> from) {
+        for (Tile tile : from) {
+            if (tile.equals(search)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -217,8 +236,8 @@ public class FastFigher extends ActiveScript implements PaintListener {
             g.drawString("Fast Fighter V" + version, 200, 327);
             g.drawString("Status: " + status, 380, 327);
             if (target != null) target.getLocation().draw(g, target.isDead() ? Color.black : target.isInCombat() ? Color.GREEN : highlight);
-            if (!safeSpots.isEmpty()) {
-                safeSpots.forEach(tile -> {
+            if (!profile.safeSpots.isEmpty()) {
+                profile.safeSpots.forEach(tile -> {
                     if (tile.isOnScreen()) {
                         tile.draw(g, Color.blue);
                     }
@@ -232,47 +251,25 @@ public class FastFigher extends ActiveScript implements PaintListener {
                     tile.getRSTile().draw(g, blue);
                 }
             });
-            if (radius > 0) {
+            if (profile.radius > 0) {
                 g.setColor(Color.PINK);
                 Tile local = Players.getMyPlayer().getLocation();
-                drawDerived(g, local.derive(-radius, -radius));
-                drawDerived(g, local.derive(-radius, radius));
-                drawDerived(g, local.derive(radius, -radius));
-                drawDerived(g, local.derive(radius, radius));
+                drawDerived(g, local.derive(-profile.radius, -profile.radius));
+                drawDerived(g, local.derive(-profile.radius, profile.radius));
+                drawDerived(g, local.derive(profile.radius, -profile.radius));
+                drawDerived(g, local.derive(profile.radius, profile.radius));
             }
         }
     }
 
-    public void drawDerived(Graphics g, Tile tile) {
+
+    private void drawDerived(Graphics g, Tile tile) {
         Point d2 = Calculations.tileToMinimap(tile);
-        tile.draw(g, Color.PINK);
         g.drawRect(d2.x, d2.y, 5, 5);
+        tile.draw(g, Color.PINK);
     }
 
-    public String getXobotPath() {
-        StringBuilder builder = new StringBuilder();
-        String separator = System.getProperty("file.separator");
-        builder.append(System.getProperty("user.home")).append(separator).append("Documents").append(separator).append("XoBot").append(separator);
-        return builder.toString();
-    }
-
-    public ArrayList<Integer> getIds() {
-        return ids;
-    }
-
-    public ArrayList<Tile> getSafeSpots() {
-        return safeSpots;
-    }
-
-    public void setRadius(int lootRadius) {
-        radius = lootRadius;
-    }
-
-    public void setDelay(int time) {
-        delay = time;
-    }
-
-    public int terminate(String reason) {
+    private int terminate(String reason) {
         System.out.println("TERMINATING: Reason - " + reason);
         Game.teleport("edgeville");
         return -1;

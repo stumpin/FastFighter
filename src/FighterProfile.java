@@ -11,24 +11,16 @@ import java.util.ArrayList;
  */
 public class FighterProfile implements Serializable {
 
-    private boolean boosters = true;
-    private int delay = 0, radius = 0;
+    public boolean potions = false, renewals = false;
+    public int eat = 50, radius = 0, delay = 0;
+    public ArrayList<Tile> safeSpots = new ArrayList<>();
+    public ArrayList<Integer> ids = new ArrayList<>();
+    public ArrayList<Prayer.Prayers> prayers = new ArrayList<>();
+    public ArrayList<RSLootItem> lootItems = new ArrayList<>();
 
-    private final ArrayList<Tile> safeSpots = new ArrayList<>();
-    private final ArrayList<Integer> ids = new ArrayList<>();
-    private final ArrayList<Prayer.Prayers> prayers = new ArrayList<>();
-    private final RSLootItem[] items = {
-            new RSLootItem(283, true)
-    };
-
-
-    public FighterProfile() {
-
-    }
-
-    public static void dumpProfile(FighterProfile profile, String profileName, String name) {
+    public static void dumpProfile(FighterProfile profile, String name) {
         try {
-            final FileOutputStream fileOutputStream = new FileOutputStream(name + ".serialized");
+            final FileOutputStream fileOutputStream = new FileOutputStream(getXobotPath() + "FastFighterProfiles" + System.getProperty("file.separator") + name + ".serialized");
             final ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
             objectOutputStream.writeObject(profile);
             objectOutputStream.close();
@@ -52,28 +44,10 @@ public class FighterProfile implements Serializable {
         return null;
     }
 
-    public ArrayList<Integer> getIds() {
-        return ids;
-    }
-
-    public ArrayList<Tile> getSafeSpots() {
-        return safeSpots;
-    }
-
-    public ArrayList<Prayer.Prayers> getPrayera() {
-        return prayers;
-    }
-
-    public void setRadius(int lootRadius) {
-        radius = lootRadius;
-    }
-
-    public void setDelay(int time) {
-        delay = time;
-    }
-
-
-    public ArrayList<Prayer.Prayers> getPrayers() {
-        return prayers;
+    public static String getXobotPath() {
+        final StringBuilder builder = new StringBuilder();
+        final String separator = System.getProperty("file.separator");
+        builder.append(System.getProperty("user.home")).append(separator).append("Documents").append(separator).append("XoBot").append(separator);
+        return builder.toString();
     }
 }
