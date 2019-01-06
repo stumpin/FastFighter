@@ -155,11 +155,7 @@ public class GUI extends Application {
             if (name.isPresent() && name.get().length() > 0) {
                 updateSafeSpots();
                 fighter.profile.lootItems.clear();
-                loots.getItems().forEach(item -> {
-                    if (item.getId() > 0) {
-                        fighter.profile.lootItems.add(item);
-                    }
-                });
+                updateLoots();
                 FighterProfile.dumpProfile(fighter.profile, name.get());
             }
         });
@@ -323,7 +319,7 @@ public class GUI extends Application {
             @Override
             public void handle(KeyEvent event) {
                 final TablePosition pos = loots.getFocusModel().getFocusedCell();
-                if (event.getCode() == KeyCode.ENTER) {
+                if (event.getCode() == KeyCode.SHIFT) {
                     if (pos.getRow() == loots.getItems().size() - 1) {
                         loots.getSelectionModel().clearSelection();
                         final RSLootItem data = new RSLootItem(0, false);
@@ -442,6 +438,12 @@ public class GUI extends Application {
         final Button start = new Button("Start Script");
         start.setOnAction(action -> {
             updateSafeSpots();
+            updateLoots();
+
+            for (RSLootItem lootItem : fighter.profile.lootItems) {
+                System.out.println(lootItem.getId());
+            }
+
             stage.close();
             isFinished = true;
         });
@@ -476,10 +478,19 @@ public class GUI extends Application {
         });
     }
 
-    public void updateSafeSpots() {
+    private void updateSafeSpots() {
         tiles.forEach(tile -> {
             if (tile.isSelected()) {
                 fighter.profile.safeSpots.add(tile.getRSTile());
+            }
+        });
+    }
+
+    private void updateLoots() {
+        fighter.profile.lootItems.clear();
+        loots.getItems().forEach(item -> {
+            if (item.getId() > 0) {
+                fighter.profile.lootItems.add(item);
             }
         });
     }
