@@ -97,7 +97,7 @@ public class FastFighter extends ActiveScript implements PaintListener {
                 } else {
                     return terminate("Prayer is lower than 15%, and no prayer/restore pots found");
                 }
-            } else if (!profile.safeSpots.isEmpty() && !containsTile(Players.getMyPlayer().getLocation(), profile.safeSpots)) {//!safeSpots.contains(Players.getMyPlayer().getLocation())) {
+            } else if (!profile.safeSpots.isEmpty() && !profile.safeSpots.contains(Players.getMyPlayer().getLocation())) {
                 profile.safeSpots.sort(Comparator.comparingInt(Tile::getDistance));
                 final Tile safe = profile.safeSpots.get(0);
                 final Character interactor = Players.getMyPlayer().getInteractingCharacter();
@@ -215,15 +215,6 @@ public class FastFighter extends ActiveScript implements PaintListener {
         }
 
         return 100;
-    }
-
-    private boolean containsTile(Tile search, java.util.List<Tile> from) {
-        for (Tile tile : from) {
-            if (tile.equals(search)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
